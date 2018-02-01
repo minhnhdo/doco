@@ -1,0 +1,9 @@
+[package]
+name = "doco"
+version = "0.1.0"
+authors = ["Do Nhat Minh <mrordinaire@gmail.com>", "Renato Costa", "Shayan Mohammed"]
+keywords = ["documentation"]
+categories = ["documentation"]
+
+[dependencies]
+seer = { git = "https://github.com/dwrensha/seer/", rev = "b02359ccce636b83551535571648ae1ae48eca37" }

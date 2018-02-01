@@ -1,0 +1,19 @@
+# doco
+A documentation generator
+
+## Development setup
+1. Install rustup (https://rustup.rs/)
+2. Install nightly-2018-02-01
+
+    ```bash
+    rustup install nightly-2018-02-01
+    ```
+
+3. Instruct rustup to use nightly-2018-02-01 for doco
+
+    ```bash
+    cd /path/to/doco/
+    rustup override set nightly-2018-02-01
+    ```
+
+4. Enjoy!
