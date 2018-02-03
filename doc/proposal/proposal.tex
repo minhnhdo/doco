@@ -1,0 +1,31 @@
+\documentclass[sigconf]{acmart}
+\settopmatter{printacmref=false} % Removes citation information below abstract
+\renewcommand\footnotetextcopyrightpermission[1]{} % removes footnote with conference information in first column
+\pagestyle{plain} % removes running headers
+\usepackage{booktabs} % For formal tables
+\usepackage{listings}
+
+\begin{document}
+\title{doco: Automatically Generating \\ Documentation from Source Code}
+
+\author{Renato Costa}
+\affiliation{%
+  \institution{University of British Columbia}
+}
+\email{renatomc@cs.ubc.ca}
+
+\author{Matthew Do}
+\affiliation{%
+  \institution{University of British Columbia}
+}
+\email{minhnhdo@cs.ubc.ca}
+
+\input{abstract}
+\maketitle
+\input{introduction}
+\input{objectives}
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{references}
+
+\end{document}

@@ -1,4 +1,12 @@
-
 /target/
 **/*.rs.bk
 Cargo.lock
+*.out
+*.aux
+*.log
+*.bbl
+*.blg
+*.dvi
+*.pdf
+*.cut
+*.synctex.gz

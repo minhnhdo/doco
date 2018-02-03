@@ -1,0 +1,11 @@
+\section{Objectives}
+
+Our work aims to ease the burden of writing and updating documentation by automatically generate documentation from source code. Our tool generates documentation of legal ranges of values for function paramenters based on dynamic log analysis and symbolic execution of the source program.
+
+Below are the components for our tool.
+
+\begin{description}
+  \item [Intermediate representation for Go programs] This intermediate representation will be the input for both program augmentation, and symbolic execution.
+  \item [Program augmentation] This component augments the code by inserting log generation statements so that our tool can collect more information about the program to increase the effectiveness of document generation. It also allows us to insert documentation back into the source program.
+  \item [Symbolic execution] This component executes the intermediate representation to deduce the legal range of values for arguments passed into a function.
+\end{description}
