@@ -1,8 +1,6 @@
 \section{Objectives}
 
 Our work aims to ease the burden of writing and updating documentation by automatically generating documentation from source code. Our tool, \texttt{doco}, generates documentation of pre and post-conditions as well as simple usage examples based on analysis of logs produced from program augmentation and symbolic execution of the source program.
-
-Below are the components for our tool.
 \begin{description}
   \item [Program augmentation and log analysis] This component augments the code by inserting logging statements so that our tool can collect more information about the program to increase the effectiveness of document generation. It also allows us to insert documentation back into the source program. Our plan is to extend Daikon~\cite{Ernst:2007} to add a Rust frontend as well as additional analysis to generate the documentation.
   \item [Symbolic execution] We will rely on and extend Seer~\cite{Renshaw:2018} to deduce the required information for documentation generation.
