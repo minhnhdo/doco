@@ -1,40 +1,31 @@
 \section{Introduction}
 
 A recurring problem faced by developers working on large software projects is
-that of making sure knowledge is accessible by every member of the team.
+that of making sure knowledge is accessible by every member of the team \cite{Ko:2007}.
 Traditionally, teams have explored diverse methods of documentation, ranging
 from inline comments in the source code to documents that provide an overview
 of design and architecture.
 
-Documentation, however, has a number of drawbacks that make it less attractive
-from a developer's perspective:
+However, documentation has a number of undesired properties that tend to make
+it less attractive to a developer's workflow. Firstly, documentation needs to
+be kept up to date with the underlying code. As software projects are
+constantly evolving systems, this task can become challenging and is the
+easiest to be neglected under the pressure of short deadlines. Secondly, since
+documentation reflects the understanding of the developer who wrote it, it can
+be misleanding and incomplete, or even hard to read. Finally, traditional
+documentation artifacts cannot have its correctness automatically checked;
+developers who find themselves unable to get the information they need from
+documentation tend to resort to coworkers, making interruptions more frequent
+and increasing dependency on a single individual \cite{Ko:2007}.
 
-\begin{description}
-  \item[Accuracy.] In order for documentation to be useful,
-    it needs to be a reliable representation of the underlying code. As
-    projects are constantly evolving, keeping both representations (source code
-    and natural language description) synchronized is challenging. In some
-    projects, documentation is written by people who did not write the
-    software, increasing the chances of mismatches between code and
-    documentation. The reduced trust in the documentation causes developers
-    to often resort to coworkers, making interruptions more frequent
-    and a project more dependent on a single individual \cite{Ko:2007}.
-
-  \item[Time management.] It is not common practice to reserve developer time
-    to documentation writing. In addition, deadline pressure often causes
-    developers to forget or neglect documentation review since that is not
-    required for the software to ``work.''
-\end{description}
-
-In summary, the disadvantages associated with documentation are due, for the
-most part, to the inherent \emph{manual} process required to write
-documentation and verify that its contents match the implementation.
-
-In this project, we intend to improve the productivity of a team working on a
-large software project by providing an \emph{automated way to generate
-documentation.} When browsing large bodies of source code, it is oftentimes
-important to know what are the implicit expectations of functions: in what
-ranges its parameters are expected to be, what state the program is
-supposed to be in, among others. Such properties can, to some extent, be
-deterministically inferred by using a range of source code analysis techniques,
-such as static and dynamic analysis and symbolic execution.
+In this project, we propose \textbf{\texttt{doco}}, a tool that aims to improve
+the productivity of a team working on a large software project by providing an
+\emph{automated way to generate documentation.} When browsing large bodies of
+source code, it is oftentimes important to know what are the implicit
+expectations of functions: in what ranges its parameters are expected to be,
+what program state is valid at that point, among others.  Most of these
+properties can be deterministically inferred using source code analysis
+techniques, such as static and dynamic analysis and symbolic execution. We
+believe that by using \texttt{doco}, developers manipulating unfamiliar
+codebases will be less likely to introduce changes that infringe implicit
+assumptions that functions typically make.
