@@ -1,15 +1,65 @@
 @inproceedings{Ko:2007,
-  author = {Ko, Andrew J. and DeLine, Robert and Venolia, Gina},
-  title = {Information Needs in Collocated Software Development Teams},
-  booktitle = {Proceedings of the 29th International Conference on Software Engineering},
-  series = {ICSE '07},
-  year = {2007},
-  isbn = {0-7695-2828-7},
-  pages = {344--353},
-  numpages = {10},
-  url = {http://dx.doi.org/10.1109/ICSE.2007.45},
-  doi = {10.1109/ICSE.2007.45},
-  acmid = {1248867},
-  publisher = {IEEE Computer Society},
   address = {Washington, DC, USA},
+  series = {ICSE '07},
+  title = {Information {{Needs}} in {{Collocated Software Development Teams}}},
+  isbn = {978-0-7695-2828-1},
+  doi = {10.1109/ICSE.2007.45},
+  abstract = {Previous research has documented the fragmented nature of software development work. To explain this in more detail, we analyzed software developers' day-to-day information needs. We observed seventeen developers at a large software company and transcribed their activities in 90-minute sessions. We analyzed these logs for the information that developers sought, the sources that they used, and the situations that prevented information from being acquired. We identified twenty-one information types and cataloged the outcome and source when each type of information was sought. The most frequently sought information included awareness about artifacts and coworkers. The most often deferred searches included knowledge about design and program behavior, such as why code was written a particular way, what a program was supposed to do, and the cause of a program state. Developers often had to defer tasks because the only source of knowledge was unavailable coworkers.},
+  urldate = {2018-01-24},
+  booktitle = {Proceedings of the 29th {{International Conference}} on {{Software Engineering}}},
+  publisher = {{IEEE Computer Society}},
+  author = {Ko, Andrew J. and DeLine, Robert and Venolia, Gina},
+  year = {2007},
+  pages = {344--353}
+}
+
+@article{Ernst:2007,
+  series = {Special issue on Experimental Software and Toolkits},
+  title = {The {{Daikon}} System for Dynamic Detection of Likely Invariants},
+  volume = {69},
+  issn = {0167-6423},
+  doi = {10.1016/j.scico.2007.01.015},
+  abstract = {Daikon is an implementation of dynamic detection of likely invariants; that is, the Daikon invariant detector reports likely program invariants. An invariant is a property that holds at a certain point or points in a program; these are often used in assert statements, documentation, and formal specifications. Examples include being constant (x=a), non-zero (x$\not =$0), being in a range (a$\leq$x$\leq$b), linear relationships (y=ax+b), ordering (x$\leq$y), functions from a library (x=fn(y)), containment (x$\in$y), sortedness (xissorted), and many more. Users can extend Daikon to check for additional invariants. Dynamic invariant detection runs a program, observes the values that the program computes, and then reports properties that were true over the observed executions. Dynamic invariant detection is a machine learning technique that can be applied to arbitrary data. Daikon can detect invariants in C, C++, Java, and Perl programs, and in record-structured data sources; it is easy to extend Daikon to other applications. Invariants can be useful in program understanding and a host of other applications. Daikon's output has been used for generating test cases, predicting incompatibilities in component integration, automating theorem proving, repairing inconsistent data structures, and checking the validity of data streams, among other tasks. Daikon is freely available in source and binary form, along with extensive documentation, at http://pag.csail.mit.edu/daikon/.},
+  number = {1},
+  urldate = {2018-02-03},
+  journal = {Science of Computer Programming},
+  author = {Ernst, Michael D. and Perkins, Jeff H. and Guo, Philip J. and McCamant, Stephen and Pacheco, Carlos and Tschantz, Matthew S. and Xiao, Chen},
+  month = dec,
+  year = {2007},
+  keywords = {Daikon,Dynamic analysis,Dynamic invariant detection,Inductive logic programming,Inference,Invariant,Likely invariant,Program understanding,Specification,Specification mining},
+  pages = {35--45}
+}
+
+@misc{Renshaw:2018,
+  title = {Seer: Symbolic Execution Engine for {{Rust}}},
+  shorttitle = {Seer},
+  urldate = {2018-02-03},
+  url = {https://github.com/dwrensha/seer},
+  author = {Renshaw, David},
+  month = jan,
+  year = {2018}
+}
+
+@misc{bluss:2018,
+  title = {Rust-Itertools: {{Extra}} Iterator Adaptors, Iterator Methods, Free Functions, and Macros},
+  copyright = {Apache-2.0},
+  shorttitle = {Rust-Itertools},
+  url = {https://docs.rs/itertools/0.7.6/itertools/#functions},
+  urldate = {2018-02-03},
+  author = {{bluss}},
+  month = feb,
+  year = {2018},
+  keywords = {iterators,rust}
+}
+
+@misc{NeovimTeam:2018,
+  title = {Neovim: {{Vim}}-Fork Focused on Extensibility and Usability},
+  shorttitle = {Neovim},
+  url = {https://github.com/neovim/neovim},
+  urldate = {2018-02-03},
+  publisher = {{Neovim}},
+  author = {Neovim Team},
+  month = feb,
+  year = {2018},
+  keywords = {api,c,cross-platform,extensible,lua,neovim,nvim,text-editor,vim}
 }
