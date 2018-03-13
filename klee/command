@@ -5,4 +5,4 @@ cmake \
   -DENABLE_UNIT_TESTS=OFF \
   -DENABLE_SYSTEM_TESTS=OFF \
   -DENABLE_DOXYGEN=OFF \
-  ../klee
+  src/

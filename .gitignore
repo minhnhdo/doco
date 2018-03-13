@@ -305,5 +305,5 @@ tags
 
 # End of https://www.gitignore.io/api/vim,rust,latex,c
 
-/klee-build-dir
+/klee/*
 /scratchpad

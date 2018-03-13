@@ -1,3 +1,3 @@
 [submodule "klee"]
-	path = klee
+	path = klee/src
 	url = git@github.com:klee/klee.git
