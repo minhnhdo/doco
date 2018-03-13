@@ -14,7 +14,7 @@ struct Config {
 
 fn usage(program_name: &str) {
     eprintln!("Usage: {} <json config>|<path/to/config.json>", program_name);
-    process::abort();
+    process::exit(1);
 }
 
 fn read_config(path: &str) -> io::Result<String>  {
@@ -33,7 +33,7 @@ pub fn main() {
             // reading from file
             read_config(&args[1]).unwrap_or_else(|e| {
                 eprintln!("Unable to read configuration file {}, err = {}", args[1], e);
-                process::abort();
+                process::exit(1);
             })
         } else {
             // the config is provided in the command line argument
@@ -41,7 +41,7 @@ pub fn main() {
         };
         json::from_str(&content).unwrap_or_else(|e| {
             eprintln!("Unable to parse configuration {}, err = {}", content, e);
-            process::abort();
+            process::exit(1);
         })
     };
     println!("Found config {:?}", json::to_string(&config));
