@@ -13,7 +13,7 @@ struct Config {
 }
 
 fn usage(program_name: &str) {
-    eprintln!("Usage: {} path/to/config.json", program_name);
+    eprintln!("Usage: {} <json config>|<path/to/config.json>", program_name);
     process::abort();
 }
 
@@ -28,18 +28,21 @@ pub fn main() {
     if args.len() != 2 {
         usage(&args[0]);
     }
-    let config: Config = match read_config(&args[1]) {
-        Ok(string) => match json::from_str(&string) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("Unable to parse configuration file {}, err = {}", args[1], e);
+    let config: Config = {
+        let content = if args[1].ends_with(".json") {
+            // reading from file
+            read_config(&args[1]).unwrap_or_else(|e| {
+                eprintln!("Unable to read configuration file {}, err = {}", args[1], e);
                 process::abort();
-            },
-        },
-        Err(e) => {
-            eprintln!("Unable to open configuration file {}, err = {}", args[1], e);
+            })
+        } else {
+            // the config is provided in the command line argument
+            args[1].clone()
+        };
+        json::from_str(&content).unwrap_or_else(|e| {
+            eprintln!("Unable to parse configuration {}, err = {}", content, e);
             process::abort();
-        },
+        })
     };
     println!("Found config {:?}", json::to_string(&config));
 }
