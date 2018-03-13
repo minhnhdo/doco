@@ -6,4 +6,3 @@ keywords = ["documentation"]
 categories = ["documentation"]
 
 [dependencies]
-seer = { git = "https://github.com/dwrensha/seer/", rev = "8f4c77c61b05dd6155e7df9c88b3a923e6673d20" }
