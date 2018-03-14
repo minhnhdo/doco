@@ -1,2 +1,4 @@
 {
+  "jpf_home": "../jpf-core/",
+  "jvm_flags": "-Xmx1024m -ea"
 }

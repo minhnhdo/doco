@@ -1,0 +1,24 @@
+shell=gov.nasa.jpf.jdart.summaries.MethodSummarizer
+
+target=examples.IsPositive
+
+# suppress jpf output
+report.console.start=
+report.console.finished=
+report.console.property_violation=
+
+symbolic.dp=z3
+symbolic.dp.z3.bitvectors=true
+
+summary.methods=isPositive,countPositives
+
+# jdart.configs.all_fields_symbolic.symbolic.include=this.*
+# jdart.configs.isPositive.symbolic.statics=examples.IsPositive
+# jdart.configs.isPositive.symbolic.include=examples.IsPositive.*
+
+concolic.method.isPositive=examples.IsPositive.isPositive(i:int)
+# concolic.method.isPositive.config=all_fields_symbolic
+
+concolic.method.countPositives=examples.IsPositive.countPositives(xs:int[])
+# concolic.method.countPositives.constraints=(xs.length>0)
+# concolic.method.isPositive.config=all_fields_symbolic
