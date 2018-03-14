@@ -9,7 +9,6 @@ use std::process;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Config {
-    path_to_klee_suite: String,
 }
 
 fn usage(program_name: &str) {
