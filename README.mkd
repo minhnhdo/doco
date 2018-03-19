@@ -1,2 +1,12 @@
 # doco
 A documentation generator
+
+## Development setup
+1) JDart: follow instructions [here](https://github.com/psycopaths/jdart). I'm using the following configuration.
+
+        jpf-core = /path/to/jpf-core
+        jpf-jdart = /path/to/jdart
+
+        extensions = ${jpf-core}
+
+        @using = jpf-jdart
