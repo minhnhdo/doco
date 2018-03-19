@@ -38,6 +38,6 @@ pub fn main() {
     });
 
     // construct the command line arguments to pass to jpf
-    let mut cmd = doco::construct_command(&config, &output_path);
+    let mut cmd = doco::jpf::construct_command(&config, &output_path);
     println!("{:?}", cmd.output());
 }
