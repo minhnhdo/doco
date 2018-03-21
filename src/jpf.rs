@@ -31,7 +31,7 @@ pub fn construct_command(config: &Config, output_path: &PathBuf) -> process::Com
     args.push("+symbolic.dp=z3");
     args.push("+symbolic.dp.z3.bitvectors=true");
     args.push("+summary.methods=isPositive,countPositives");
-    args.push("+concolic.method.isPositive=examples.IsPositive.isPositive(i:int)");
+    args.push("+concolic.method.isPositive=examples.IsPositive.isPositive(other:examples.IsPositive,i:int)");
     args.push("+concolic.method.countPositives=examples.IsPositive.countPositives(xs:int[])");
     args.push(&output_config);
     args.push("+classpath=.");
