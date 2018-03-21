@@ -3,7 +3,7 @@ use std::path::Path;
 use std::fs;
 use std::result;
 
-pub type Result = result::Result<bool, FileTraverseError>;
+pub type Result = result::Result<(), FileTraverseError>;
 pub type FileCallback = fn(&Path) -> Result;
 
 struct NotADirectory {
@@ -54,7 +54,7 @@ fn ftw_rec(path: &Path, on_dir: fn(&Path) -> Result, on_file: FileCallback) -> R
         }
     }
 
-    Ok(true)
+    Ok(())
 }
 
 pub fn ftw(path: &String, on_dir: FileCallback, on_file: FileCallback) -> Result {
@@ -67,5 +67,5 @@ pub fn ftw(path: &String, on_dir: FileCallback, on_file: FileCallback) -> Result
     }
 
     ftw_rec(p, on_dir, on_file)?;
-    Ok(true)
+    Ok(())
 }

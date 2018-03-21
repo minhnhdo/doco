@@ -27,15 +27,15 @@ impl fmt::Display for Error {
 
 fn on_test_file(file: &Path) -> ftw::Result {
     println!("\t{}", file.to_str().unwrap());
-    Ok(true)
+    Ok(())
 }
 
 fn on_test_dir(dir: &Path) -> ftw::Result {
     println!("{}", dir.to_str().unwrap());
-    Ok(true)
+    Ok(())
 }
 
-pub fn infer(config: &Config, output_path: &PathBuf) -> Result<bool> {
+pub fn infer(config: &Config, output_path: &PathBuf) -> Result<()> {
     let daikon_out = output_path.join(OUTPUT_PREFIX);
     println!("Inferring to: {:?}", daikon_out);
 
@@ -43,5 +43,5 @@ pub fn infer(config: &Config, output_path: &PathBuf) -> Result<bool> {
         return Err(Error::DynamicAnalysisFailure(err.path, err.message));
     }
 
-    Ok(true)
+    Ok(())
 }
