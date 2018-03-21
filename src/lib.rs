@@ -8,6 +8,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json as json;
 
+pub mod daikon;
 pub mod jpf;
 
 use std::fs::{self, File};
@@ -21,6 +22,7 @@ pub struct Config {
     jpf_home: String,
     jvm_flags: String,
     classpath: Vec<String>,
+    tests_dir: String,
 }
 
 impl Config {
@@ -29,7 +31,7 @@ impl Config {
     }
 }
 
-pub fn random_alphanumeric_string(size: usize) -> String {
+fn random_alphanumeric_string(size: usize) -> String {
     rand::thread_rng().gen_ascii_chars().take(size).collect()
 }
 
@@ -47,7 +49,7 @@ pub fn create_random_path(parent: &Path, prefix: &str, size: usize) -> io::Resul
     fs::create_dir_all(&path).map(|()| path)
 }
 
-pub fn read_file_to_string(path: &str) -> io::Result<String>  {
+pub fn read_file_to_string(path: &str) -> io::Result<String> {
     let mut string = String::new();
     File::open(path)?.read_to_string(&mut string)?;
     Ok(string)

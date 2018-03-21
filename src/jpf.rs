@@ -24,10 +24,13 @@ jdart.configs.{{method_name}}.symbolic.include=this.*;{{package}}.{{class}}.*
 ";
 
 fn construct_path(parent: &PathBuf, addition: &str) -> String {
-    String::from(parent.join(addition).to_str().unwrap_or_else(|| {
-        eprintln!("Unable to construct path to {}", addition);
-        process::exit(1);
-    }))
+    String::from(parent
+                     .join(addition)
+                     .to_str()
+                     .unwrap_or_else(|| {
+                                         eprintln!("Unable to construct path to {}", addition);
+                                         process::exit(1);
+                                     }))
 }
 
 fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String) {
@@ -46,14 +49,22 @@ fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String)
         ret.push('(');
         for arg in cap["arglist"].split(',') {
             let mut split_arg = arg.split_whitespace();
-            let type_ = split_arg.next().unwrap_or_else(|| {
-                eprintln!("Unable to extract the type for argument {} of method {}", arg, name);
-                process::exit(1);
-            });
-            let arg_name = split_arg.next().unwrap_or_else(|| {
-                eprintln!("Unable to extract the name for argument {} of method {}", arg, name);
-                process::exit(1);
-            });
+            let type_ = split_arg
+                .next()
+                .unwrap_or_else(|| {
+                    eprintln!("Unable to extract the type for argument {} of method {}",
+                              arg,
+                              name);
+                    process::exit(1);
+                });
+            let arg_name = split_arg
+                .next()
+                .unwrap_or_else(|| {
+                    eprintln!("Unable to extract the name for argument {} of method {}",
+                              arg,
+                              name);
+                    process::exit(1);
+                });
             if split_arg.next().is_some() {
                 eprintln!("Malformed argument {} in method {}", arg, name);
                 process::exit(1);
@@ -71,7 +82,8 @@ fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String)
 pub fn construct_command(config: &Config, output_path: &PathBuf) -> process::Command {
     let package = "com.google.common.math";
     let class = "IntMath";
-    let (method_name, method_signature) = parse_java_method(package, class, "public static boolean isPrime(int n) {");
+    let (method_name, method_signature) =
+        parse_java_method(package, class, "public static boolean isPrime(int n) {");
     let template = mustache::compile_str(SPF_TEMPLATE).unwrap();
     let jar_path = construct_path(&PathBuf::from(&config.jpf_home), "build/RunJPF.jar");
     let out_json_path = construct_path(output_path, "out.json");
@@ -88,17 +100,19 @@ pub fn construct_command(config: &Config, output_path: &PathBuf) -> process::Com
         eprintln!("Unable to create {}, err = {}", &run_jpf_path, err);
         process::exit(1);
     });
-    template.render_data(&mut run_jpf_file, &template_args).unwrap_or_else(|err| {
-        eprintln!("Unable to render {}, err = {}", &run_jpf_path, err);
-        process::exit(1);
-    });
+    template
+        .render_data(&mut run_jpf_file, &template_args)
+        .unwrap_or_else(|err| {
+                            eprintln!("Unable to render {}, err = {}", &run_jpf_path, err);
+                            process::exit(1);
+                        });
     let mut args: Vec<&str> = config.jvm_flags.split(' ').collect();
     args.push("-jar");
     args.push(&jar_path);
     args.push(&run_jpf_path);
     let mut cmd = Command::new("java");
     cmd.env("JPF_HOME", &config.jpf_home)
-       .env("JVM_FLAGS", &config.jvm_flags)
-       .args(&args);
+        .env("JVM_FLAGS", &config.jvm_flags)
+        .args(&args);
     cmd
 }
