@@ -39,5 +39,12 @@ pub fn main() {
 
     // construct the command line arguments to pass to jpf
     let mut cmd = doco::jpf::construct_command(&config, &output_path);
-    println!("{:?}", cmd.output());
+    if let Ok(process::Output { stderr, stdout, .. }) = cmd.output() {
+        if let Ok(s) = std::str::from_utf8(&stderr) {
+            println!("stderr:\n{}\n", s);
+        }
+        if let Ok(s) = std::str::from_utf8(&stdout) {
+            println!("stdout:\n{}\n", s);
+        }
+    }
 }

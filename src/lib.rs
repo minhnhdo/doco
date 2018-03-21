@@ -1,3 +1,4 @@
+extern crate mustache;
 extern crate rand;
 extern crate serde;
 #[macro_use]
