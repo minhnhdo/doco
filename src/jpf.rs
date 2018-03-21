@@ -7,12 +7,12 @@ use super::Config;
 
 static SPF_TEMPLATE: &str = r#"
 shell=gov.nasa.jpf.jdart.summaries.MethodSummarizer
-target=com.google.common.math.IntMath
 report.console.start=
 report.console.finished=
 report.console.property_violation=
 symbolic.dp=z3
 symbolic.dp.z3.bitvectors=true
+target=com.google.common.math.IntMath
 summary.methods=isPrime
 concolic.method.isPrime=com.google.common.math.IntMath.isPrime(n: int)
 concolic.method.isPrime.config=isPrime
@@ -35,7 +35,7 @@ pub fn construct_command(config: &Config, output_path: &PathBuf) -> process::Com
     let out_json_path = construct_path(output_path, "out.json");
     let run_jpf_path = construct_path(output_path, "run.jpf");
     let template_args = MapBuilder::new()
-        .insert_str("classpath", "/home/minh/Documents/Workspace/guava/guava/target/classes;/home/minh/.m2/repository/org/checkerframework/checker-compat-qual/2.0.0/checker-compat-qual-2.0.0.jar")
+        .insert_str("classpath", config.classpath.join(";"))
         .insert_str("output_path", &out_json_path)
         .build();
     let mut run_jpf_file = File::create(&run_jpf_path).unwrap_or_else(|err| {

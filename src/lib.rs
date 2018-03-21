@@ -17,6 +17,7 @@ use rand::Rng;
 pub struct Config {
     jpf_home: String,
     jvm_flags: String,
+    classpath: Vec<String>,
 }
 
 impl Config {
