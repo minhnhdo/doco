@@ -105,7 +105,7 @@ impl Range {
         if other_len == 0 {
             return Range { ranges: self.ranges.clone() };
         }
-        let mut ranges = Vec::with_capacity(self_len + other_len);
+        let mut ranges = Vec::with_capacity(cmp::max(self_len, other_len));
         let mut self_index = 0;
         let mut other_index = 0;
         while self_index < self_len && other_index < other_len {
@@ -168,6 +168,16 @@ impl Range {
 #[cfg(test)]
 mod test {
     use super::Range;
+
+    #[test]
+    fn test_empty_union() {
+        let r1 = Range::from(3, 1); // empty range
+        let r2 = Range::from(4, 6);
+        let test1 = r1.union(&r2);
+        assert_eq!(vec![(4, 6)], test1.ranges);
+        let test2 = r2.union(&r1);
+        assert_eq!(vec![(4, 6)], test2.ranges);
+    }
 
     #[test]
     fn test_disjoint_union() {
