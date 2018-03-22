@@ -6,8 +6,10 @@ use std::process;
 use doco::Config;
 
 fn usage(program_name: &str) {
-    eprintln!("Usage: {} <json config>|<path/to/config.json>",
-              program_name);
+    eprintln!(
+        "Usage: {} <json config>|<path/to/config.json>",
+        program_name
+    );
     process::exit(1);
 }
 

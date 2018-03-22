@@ -35,9 +35,9 @@ fn ftw_rec(path: &Path, on_dir: fn(&Path) -> Result, on_file: FileCallback) -> R
             Ok(e) => e,
             Err(err) => {
                 return Err(FileTraverseError {
-                               path: path_str.clone(),
-                               message: format!("{}", err),
-                           })
+                    path: path_str.clone(),
+                    message: format!("{}", err),
+                })
             }
         };
 
@@ -61,9 +61,9 @@ pub fn ftw(path: &String, on_dir: FileCallback, on_file: FileCallback) -> Result
     let p = Path::new(path);
     if !p.is_dir() {
         return Err(FileTraverseError {
-                       path: path.clone(),
-                       message: format!("{}", NotADirectory { name: path.clone() }),
-                   });
+            path: path.clone(),
+            message: format!("{}", NotADirectory { name: path.clone() }),
+        });
     }
 
     ftw_rec(p, on_dir, on_file)?;

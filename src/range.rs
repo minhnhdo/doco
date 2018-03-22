@@ -20,7 +20,9 @@ impl Range {
     pub fn simplify(&self) -> Range {
         let len = self.ranges.len();
         if len <= 1 {
-            return Range { ranges: self.ranges.clone() };
+            return Range {
+                ranges: self.ranges.clone(),
+            };
         }
         let &(mut a, mut b) = unsafe { self.ranges.get_unchecked(0) };
         let mut ranges = Vec::with_capacity(len);
@@ -98,10 +100,14 @@ impl Range {
         let self_len = self.ranges.len();
         let other_len = other.ranges.len();
         if self_len == 0 {
-            return Range { ranges: other.ranges.clone() };
+            return Range {
+                ranges: other.ranges.clone(),
+            };
         }
         if other_len == 0 {
-            return Range { ranges: self.ranges.clone() };
+            return Range {
+                ranges: self.ranges.clone(),
+            };
         }
         let mut ranges = Vec::with_capacity(cmp::max(self_len, other_len));
         let mut self_index = 0;
