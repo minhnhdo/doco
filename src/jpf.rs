@@ -90,7 +90,7 @@ pub fn construct_command(config: &Config, output_path: &PathBuf) -> process::Com
     let run_jpf_path = construct_path(output_path, "run.jpf");
     let template_args = MapBuilder::new()
         .insert_str("classpath", config.classpath.join(";"))
-        .insert_str("output_path", &out_json_path)
+        .insert_str("output_path", out_json_path)
         .insert_str("package", package)
         .insert_str("class", class)
         .insert_str("method_name", method_name)
