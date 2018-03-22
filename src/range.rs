@@ -8,14 +8,12 @@ pub struct Range {
 
 impl Range {
     pub fn from(lower: i64, upper: i64) -> Range {
-        if lower <= upper {
-            Range {
-                ranges: vec![(lower, upper)],
-            }
-        } else {
-            Range {
-                ranges: vec![],
-            }
+        Range {
+            ranges: if lower <= upper {
+                vec![(lower, upper)]
+            } else {
+                vec![]
+            },
         }
     }
 
@@ -36,7 +34,7 @@ impl Range {
             }
         }
         ranges.push((a, b));
-        Range{ranges}
+        Range { ranges }
     }
 
     pub fn intersect(&self, other: &Range) -> Range {
