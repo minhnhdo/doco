@@ -1,3 +1,5 @@
+use std::cmp;
+
 pub struct Range {
     /// ranges of the value, each represented as a lower bound and an upper
     /// bound, both inclusive.
@@ -40,13 +42,10 @@ impl Range {
     pub fn intersect(&self, other: &Range) -> Range {
         let self_len = self.ranges.len();
         let other_len = other.ranges.len();
-        if self_len == 0 {
-            return Range { ranges: other.ranges.clone() };
+        if self_len == 0 || other_len == 0 {
+            return Range { ranges: Vec::new() };
         }
-        if other_len == 0 {
-            return Range { ranges: self.ranges.clone() };
-        }
-        let mut ranges = Vec::with_capacity(self_len + other_len);
+        let mut ranges = Vec::with_capacity(cmp::max(self_len, other_len));
         let mut self_index = 0;
         let mut other_index = 0;
         while self_index < self_len && other_index < other_len {
@@ -211,7 +210,17 @@ mod test {
     }
 
     #[test]
-    fn test_disjoint_intersect() {
+    fn test_empty_intersection() {
+        let r1 = Range::from(3, 1); // empty range
+        let r2 = Range::from(4, 6);
+        let test1 = r1.intersect(&r2);
+        assert_eq!(Vec::<(i64, i64)>::new(), test1.ranges);
+        let test2 = r2.intersect(&r1);
+        assert_eq!(Vec::<(i64, i64)>::new(), test2.ranges);
+    }
+
+    #[test]
+    fn test_disjoint_intersection() {
         let r1 = Range::from(1, 3);
         let r2 = Range::from(4, 6);
         let test1 = r1.intersect(&r2);
@@ -221,7 +230,7 @@ mod test {
     }
 
     #[test]
-    fn test_overlapping_intersect() {
+    fn test_overlapping_intersection() {
         let r1 = Range::from(1, 4);
         let r2 = Range::from(3, 6);
         let test1 = r1.intersect(&r2);
@@ -231,7 +240,7 @@ mod test {
     }
 
     #[test]
-    fn test_contained_intersect() {
+    fn test_contained_intersection() {
         let r1 = Range::from(1, 6);
         let r2 = Range::from(3, 4);
         let test1 = r1.intersect(&r2);
@@ -241,7 +250,7 @@ mod test {
     }
 
     #[test]
-    fn test_complex_intersect() {
+    fn test_complex_intersection() {
         let r1 = Range::from(1, 4).union(&Range::from(5, 7));
         let r2 = Range::from(3, 6).union(&Range::from(7, 8));
         let test1 = r1.intersect(&r2);
