@@ -271,6 +271,31 @@ mod test {
     }
 
     #[test]
+    fn test_parse_complex_nested_declaration() {
+        let mut m = HashMap::new();
+        m.insert(
+            String::from("a"),
+            Variable {
+                name: String::from("a"),
+                typ: Type::SInt32,
+                range: Range::from(i32::MIN as i64, -1),
+            },
+        );
+        m.insert(
+            String::from("b"),
+            Variable {
+                name: String::from("b"),
+                typ: Type::SInt64,
+                range: Range::from(i64::MIN, 1).union(&Range::from(3, 12)),
+            },
+        );
+        let (_, output) = parse_declaration(
+            &b"[L]declare 'a':sint32, 'b':sint64 in (((sint64)'a' < 0) && (((sint8)'b' != 2) && ((sint8)'b' <= 12)))"[..],
+        ).unwrap();
+        assert_eq!(Some(m), output);
+    }
+
+    #[test]
     fn test_parse_simple_real_declaration() {
         let mut m = HashMap::new();
         m.insert(
