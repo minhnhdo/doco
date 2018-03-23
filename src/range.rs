@@ -1,6 +1,6 @@
 use std::cmp;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Range {
     /// ranges of the value, each represented as a lower bound and an upper
     /// bound, both inclusive.

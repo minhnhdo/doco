@@ -133,6 +133,15 @@ named! {
 }
 
 named! {
+    parse_ident,
+    do_parse!(
+        opt!(delimited!(tag!("("), parse_type, tag!(")"))) >>
+        bytes: parse_variable >>
+        (bytes)
+    )
+}
+
+named! {
     parse_parentheses<Ast>,
     delimited!(tag!("("), alt!(parse_and | parse_comparision), tag!(")"))
 }
@@ -159,13 +168,13 @@ named!{
 named! {
     parse_comparision<Ast>,
     do_parse!(
-        name: parse_variable >>
+        ident: parse_ident >>
         op: ws!(alt_complete!(tag!("==") | tag!("!=") | tag!("<") | tag!("<=") | tag!(">") | tag!(">="))) >>
         val: alt_complete!(
             map!(digit, |ds| str::from_utf8(ds).unwrap().parse::<i64>().unwrap()) |
             parse_negative_number
         ) >>
-        (make_comparison(name, op, val))
+        (make_comparison(ident, op, val))
     )
 }
 
@@ -227,14 +236,29 @@ mod test {
     }
 
     #[test]
-    fn test_parse_declaration() {
+    fn test_simple_declaration() {
+        let mut m = HashMap::new();
+        m.insert(
+            String::from("a"),
+            Variable {
+                name: String::from("a"),
+                typ: Type::SInt64,
+                range: Range::from(1, i64::MAX),
+            },
+        );
+        let (_, output) = parse_declaration(&b"[L]declare 'a':sint64 in ('a' > 0)"[..]).unwrap();
+        assert_eq!(m, output);
+    }
+
+    #[test]
+    fn test_parse_complex_declaration() {
         let mut m = HashMap::new();
         m.insert(
             String::from("a"),
             Variable {
                 name: String::from("a"),
                 typ: Type::SInt32,
-                range: Range::from(1, i32::MAX as i64),
+                range: Range::from(i32::MIN as i64, -1),
             },
         );
         m.insert(
@@ -242,11 +266,11 @@ mod test {
             Variable {
                 name: String::from("b"),
                 typ: Type::SInt64,
-                range: Range::from(i64::MIN, 1),
+                range: Range::from(i64::MIN, 1).union(&Range::from(3, i64::MAX)),
             },
         );
         let (_, output) = parse_declaration(
-            &b"[L]declare 'a':sint32, 'b':sint64 in (('a' > 0) && ('b' < 2))"[..],
+            &b"[L]declare 'a':sint32, 'b':sint64 in (((sint64)'a' < 0) && ((sint8)'b' != 2))"[..],
         ).unwrap();
         assert_eq!(m, output);
     }
