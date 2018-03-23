@@ -1,4 +1,5 @@
 use nom::{alphanumeric, digit, IResult};
+use regex::Regex;
 use std::collections::HashMap;
 use std::{str, i16, i32, i64, i8};
 
@@ -39,11 +40,17 @@ impl Expression {
     pub fn from_str(s: &str) -> Expression {
         match parse_declaration(s.as_bytes()) {
             IResult::Done(_, Some(vars)) => Expression::Parsed(vars),
-            _ => Expression::Unparsable(String::from(if let Some(idx) = s.find('(') {
-                &s[idx..]
-            } else {
-                s
-            })),
+            _ => {
+                lazy_static! {
+                    static ref RE: Regex = Regex::new(r"\([a-zA-Z0-9]*\)").unwrap();
+                }
+                let stripped = if let Some(idx) = s.find('(') {
+                    &s[idx..]
+                } else {
+                    s
+                };
+                Expression::Unparsable(String::from(RE.replace_all(s, "")))
+            }
         }
     }
 }
