@@ -3,6 +3,7 @@ extern crate doco;
 use std::env;
 use std::process;
 
+use doco::daikon::invariants;
 use doco::Config;
 
 fn usage(program_name: &str) {
@@ -53,8 +54,10 @@ pub fn main() {
     }
 
     println!("\nDynamic Analysis:");
-    match doco::daikon::infer(&config, &output_path) {
-        Ok(_) => println!("Success!"),
-        Err(err) => println!("Error running dynamic analysis: {}", err),
-    }
+    // match doco::daikon::infer(&config, &output_path) {
+    //     Ok(_) => println!("Success!"),
+    //     Err(err) => println!("Error running dynamic analysis: {}", err),
+    // }
+    let inv = invariants::Invariants::from_file("/tmp/inv.txt").unwrap();
+    println!("{}", inv);
 }
