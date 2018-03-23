@@ -38,7 +38,7 @@ pub enum Expression {
 impl Expression {
     pub fn from_str(s: &str) -> Expression {
         match parse_declaration(s.as_bytes()) {
-            IResult::Done(_, vars) => Expression::Parsed(vars),
+            IResult::Done(_, Some(vars)) => Expression::Parsed(vars),
             _ => Expression::Unparsable(String::from(s)),
         }
     }
@@ -94,37 +94,38 @@ fn make_comparison(name: &[u8], op: &[u8], val: i64) -> Ast {
     }
 }
 
-fn interprete(vars: &mut HashMap<String, Variable>, ast: &Ast) {
+fn interprete(vars: &mut HashMap<String, Variable>, ast: &Ast) -> Option<()> {
     match ast {
         &Ast::And(ref v) => for e in v.iter() {
-            interprete(vars, e);
+            interprete(vars, e)?;
         },
         &Ast::Lt(ref name, val) => {
-            let mut v = vars.get_mut(name).unwrap();
+            let mut v = vars.get_mut(name)?;
             v.range = v.range.intersect(&Range::from(i64::MIN, val - 1));
         }
         &Ast::Lte(ref name, val) => {
-            let mut v = vars.get_mut(name).unwrap();
+            let mut v = vars.get_mut(name)?;
             v.range = v.range.intersect(&Range::from(i64::MIN, val));
         }
         &Ast::Gt(ref name, val) => {
-            let mut v = vars.get_mut(name).unwrap();
+            let mut v = vars.get_mut(name)?;
             v.range = v.range.intersect(&Range::from(val + 1, i64::MAX));
         }
         &Ast::Gte(ref name, val) => {
-            let mut v = vars.get_mut(name).unwrap();
+            let mut v = vars.get_mut(name)?;
             v.range = v.range.intersect(&Range::from(val, i64::MAX));
         }
         &Ast::Eq(ref name, val) => {
-            let mut v = vars.get_mut(name).unwrap();
+            let mut v = vars.get_mut(name)?;
             v.range = v.range.intersect(&Range::from(val, val));
         }
         &Ast::Neq(ref name, val) => {
-            let mut v = vars.get_mut(name).unwrap();
+            let mut v = vars.get_mut(name)?;
             v.range = v.range
                 .intersect(&Range::from(i64::MIN, val - 1).union(&Range::from(val + 1, i64::MAX)));
         }
     }
+    Some(())
 }
 
 named! {
@@ -188,19 +189,18 @@ named! {
 }
 
 named! {
-    parse_declaration< HashMap<String, Variable> >,
+    parse_declaration< Option<HashMap<String, Variable>> >,
     alt_complete!(
-        map!(tag!("[L]true"), |_| HashMap::new())
+        map!(tag!("[L]true"), |_| Some(HashMap::new()))
         | map!(
             do_parse!(
                 tag!("[L]declare ") >>
                 vars: map!(separated_nonempty_list!(tag!(", "), parse_variable_declaration), variable_map) >>
-                tag!(" in (") >>
-                ast: parse_and >>
-                tag!(")") >>
+                tag!(" in ") >>
+                ast: parse_parentheses >>
                 (vars, ast)
             ),
-            |(mut vars, ast)| { interprete(&mut vars, &ast); vars }
+            |(mut vars, ast)| { interprete(&mut vars, &ast).map(|()| vars) }
         )
     )
 }
@@ -242,7 +242,7 @@ mod test {
             },
         );
         let (_, output) = parse_declaration(&b"[L]declare 'a':sint64 in (('a' > 0))"[..]).unwrap();
-        assert_eq!(m, output);
+        assert_eq!(Some(m), output);
     }
 
     #[test]
@@ -267,7 +267,7 @@ mod test {
         let (_, output) = parse_declaration(
             &b"[L]declare 'a':sint32, 'b':sint64 in (((sint64)'a' < 0) && ((sint8)'b' != 2))"[..],
         ).unwrap();
-        assert_eq!(m, output);
+        assert_eq!(Some(m), output);
     }
 
     #[test]
@@ -284,6 +284,6 @@ mod test {
         let (_, output) = parse_declaration(
             &b"[L]declare 'n':sint32 in (((sint64)'n' >= 0) && ((sint64)'n' < 2))"[..],
         ).unwrap();
-        assert_eq!(m, output);
+        assert_eq!(Some(m), output);
     }
 }
