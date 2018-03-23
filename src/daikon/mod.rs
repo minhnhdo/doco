@@ -2,6 +2,8 @@ use std::fmt;
 use std::path::{Path, PathBuf};
 use std::result;
 
+pub mod invariants;
+
 use super::ftw;
 use super::Config;
 
