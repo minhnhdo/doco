@@ -143,18 +143,12 @@ named! {
 
 named! {
     parse_parentheses<Ast>,
-    delimited!(tag!("("), alt!(parse_and | parse_comparision), tag!(")"))
+    delimited!(tag!("("), alt_complete!(parse_comparision | parse_and), tag!(")"))
 }
 
 named! {
     parse_and<Ast>,
-    do_parse!(
-        first: parse_parentheses >>
-        operands: map!(
-            many1!(do_parse!(ws!(tag!("&&")) >> operand: parse_parentheses >> (operand))),
-            |mut v| { v.push(first); v }) >>
-        (Ast::And(operands))
-    )
+    map!(separated_list_complete!(ws!(tag!("&&")), parse_parentheses), Ast::And)
 }
 
 named!{
@@ -169,7 +163,7 @@ named! {
     parse_comparision<Ast>,
     do_parse!(
         ident: parse_ident >>
-        op: ws!(alt_complete!(tag!("==") | tag!("!=") | tag!("<") | tag!("<=") | tag!(">") | tag!(">="))) >>
+        op: ws!(alt_complete!(tag!("==") | tag!("!=") | tag!("<=") | tag!(">=") | tag!(">") | tag!("<"))) >>
         val: alt_complete!(
             map!(digit, |ds| str::from_utf8(ds).unwrap().parse::<i64>().unwrap()) |
             parse_negative_number
@@ -201,8 +195,9 @@ named! {
             do_parse!(
                 tag!("[L]declare ") >>
                 vars: map!(separated_nonempty_list!(tag!(", "), parse_variable_declaration), variable_map) >>
-                tag!(" in ") >>
-                ast: parse_parentheses >>
+                tag!(" in (") >>
+                ast: parse_and >>
+                tag!(")") >>
                 (vars, ast)
             ),
             |(mut vars, ast)| { interprete(&mut vars, &ast); vars }
@@ -236,7 +231,7 @@ mod test {
     }
 
     #[test]
-    fn test_simple_declaration() {
+    fn test_parse_simple_declaration() {
         let mut m = HashMap::new();
         m.insert(
             String::from("a"),
@@ -246,7 +241,7 @@ mod test {
                 range: Range::from(1, i64::MAX),
             },
         );
-        let (_, output) = parse_declaration(&b"[L]declare 'a':sint64 in ('a' > 0)"[..]).unwrap();
+        let (_, output) = parse_declaration(&b"[L]declare 'a':sint64 in (('a' > 0))"[..]).unwrap();
         assert_eq!(m, output);
     }
 
@@ -271,6 +266,23 @@ mod test {
         );
         let (_, output) = parse_declaration(
             &b"[L]declare 'a':sint32, 'b':sint64 in (((sint64)'a' < 0) && ((sint8)'b' != 2))"[..],
+        ).unwrap();
+        assert_eq!(m, output);
+    }
+
+    #[test]
+    fn test_parse_simple_real_declaration() {
+        let mut m = HashMap::new();
+        m.insert(
+            String::from("n"),
+            Variable {
+                name: String::from("n"),
+                typ: Type::SInt32,
+                range: Range::from(0, 1),
+            },
+        );
+        let (_, output) = parse_declaration(
+            &b"[L]declare 'n':sint32 in (((sint64)'n' >= 0) && ((sint64)'n' < 2))"[..],
         ).unwrap();
         assert_eq!(m, output);
     }
