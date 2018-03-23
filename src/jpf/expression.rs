@@ -39,7 +39,11 @@ impl Expression {
     pub fn from_str(s: &str) -> Expression {
         match parse_declaration(s.as_bytes()) {
             IResult::Done(_, Some(vars)) => Expression::Parsed(vars),
-            _ => Expression::Unparsable(String::from(s)),
+            _ => Expression::Unparsable(String::from(if let Some(idx) = s.find('(') {
+                &s[idx..]
+            } else {
+                s
+            })),
         }
     }
 }
