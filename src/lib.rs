@@ -58,11 +58,3 @@ pub fn read_file_to_string(path: &str) -> io::Result<String> {
     File::open(path)?.read_to_string(&mut string)?;
     Ok(string)
 }
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}
