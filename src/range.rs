@@ -18,28 +18,6 @@ impl Range {
         }
     }
 
-    pub fn simplify(&self) -> Range {
-        let len = self.ranges.len();
-        if len <= 1 {
-            return Range {
-                ranges: self.ranges.clone(),
-            };
-        }
-        let &(mut a, mut b) = unsafe { self.ranges.get_unchecked(0) };
-        let mut ranges = Vec::with_capacity(len);
-        for &(c, d) in &self.ranges[1..] {
-            if b < c {
-                ranges.push((a, b));
-                a = c;
-                b = d;
-            } else {
-                b = d;
-            }
-        }
-        ranges.push((a, b));
-        Range { ranges }
-    }
-
     pub fn intersect(&self, other: &Range) -> Range {
         let self_len = self.ranges.len();
         let other_len = other.ranges.len();
@@ -110,63 +88,44 @@ impl Range {
                 ranges: self.ranges.clone(),
             };
         }
-        let mut ranges = Vec::with_capacity(cmp::max(self_len, other_len));
+        let mut ranges = Vec::with_capacity(self_len + other_len);
         let mut self_index = 0;
         let mut other_index = 0;
         while self_index < self_len && other_index < other_len {
             let &(a, b) = unsafe { self.ranges.get_unchecked(self_index) };
             let &(c, d) = unsafe { other.ranges.get_unchecked(other_index) };
-            if a > d {
-                //       a  b
-                // ------+--+-
-                //  c  d
-                // -+--+------
-                ranges.push((c, d));
-                other_index += 1;
-            } else if a >= c && b > d {
-                //     a  b        a  b
-                // ----+--+-    ---+--+-
-                //  c  d     OR  c  d
-                // -+--+----    -+--+---
-                ranges.push((c, b));
-                other_index += 1;
-                self_index += 1;
-            } else if a >= c && b <= d {
-                //    a b
-                // ---+-+-
-                //  c   d
-                // -+---+-
-                ranges.push((c, d));
-                other_index += 1;
-                self_index += 1;
-            } else if b >= d {
-                //  a     b      a    b
-                // -+-----+-    -+----+-
-                //    c  d   OR    c  d
-                // ---+--+--    ---+--+-
-                ranges.push((a, b));
-                other_index += 1;
-                self_index += 1;
-            } else if b < c {
-                //  a  b
-                // -+--+-----
-                //      c  d
-                // -----+--+-
+            if a <= c {
                 ranges.push((a, b));
                 self_index += 1;
             } else {
-                //  a  b
-                // -+--+-----
-                //    c  d
-                // ---+--+-
-                ranges.push((a, d));
+                ranges.push((c, d));
                 other_index += 1;
-                self_index += 1;
             }
         }
         ranges.extend(self.ranges[self_index..].iter());
         ranges.extend(other.ranges[other_index..].iter());
-        Range { ranges: ranges }.simplify()
+        // simplify
+        assert!(ranges.len() >= 2);
+        let &(mut a, mut b) = unsafe { ranges.get_unchecked(0) };
+        let mut write_head = 0;
+        for read_head in 1..ranges.len() {
+            let &(c, d) = unsafe { ranges.get_unchecked(read_head) };
+            if b < c {
+                unsafe {
+                    *ranges.get_unchecked_mut(write_head) = (a, b);
+                }
+                write_head += 1;
+                a = c;
+                b = d;
+            } else if b < d {
+                b = d;
+            }
+        }
+        unsafe {
+            *ranges.get_unchecked_mut(write_head) = (a, b);
+        }
+        ranges.truncate(write_head + 1);
+        Range { ranges }
     }
 }
 
@@ -202,6 +161,18 @@ mod test {
         assert_eq!(vec![(1, 6)], test1.ranges);
         let test2 = r2.union(&r1);
         assert_eq!(vec![(1, 6)], test2.ranges);
+    }
+
+    #[test]
+    fn test_complex_overlapping_union() {
+        let r1 = Range::from(1, 10);
+        let r2 = Range::from(2, 4)
+            .union(&Range::from(5, 7))
+            .union(&Range::from(8, 9));
+        let test1 = r1.union(&r2);
+        assert_eq!(vec![(1, 10)], test1.ranges);
+        let test2 = r2.union(&r1);
+        assert_eq!(vec![(1, 10)], test2.ranges);
     }
 
     #[test]
@@ -252,6 +223,18 @@ mod test {
         assert_eq!(vec![(3, 4)], test1.ranges);
         let test2 = r2.intersect(&r1);
         assert_eq!(vec![(3, 4)], test2.ranges);
+    }
+
+    #[test]
+    fn test_complex_overlapping_intersection() {
+        let r1 = Range::from(1, 6).union(&Range::from(7, 9));
+        let r2 = Range::from(2, 4)
+            .union(&Range::from(5, 8))
+            .union(&Range::from(9, 10));
+        let test1 = r1.intersect(&r2);
+        assert_eq!(vec![(2, 4), (5, 6), (7, 8), (9, 9)], test1.ranges);
+        let test2 = r2.intersect(&r1);
+        assert_eq!(vec![(2, 4), (5, 6), (7, 8), (9, 9)], test2.ranges);
     }
 
     #[test]
