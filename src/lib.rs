@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate mustache;
+#[macro_use]
+extern crate nom;
 extern crate rand;
 extern crate regex;
 extern crate serde;

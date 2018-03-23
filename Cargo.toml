@@ -9,6 +9,7 @@ categories = ["documentation"]
 lazy_static = "1.0"
 mustache = "*"
 nickel = "*"
+nom = "3.2"
 rand = "0.4"
 regex = "0.2"
 serde = "1.0"

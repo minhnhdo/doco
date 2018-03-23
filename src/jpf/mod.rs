@@ -6,6 +6,8 @@ use std::process::{self, Command};
 
 use super::Config;
 
+pub mod expression;
+
 static SPF_TEMPLATE: &str = r"
 shell=gov.nasa.jpf.jdart.summaries.MethodSummarizer
 report.console.start=
