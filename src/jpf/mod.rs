@@ -1,10 +1,13 @@
 use mustache::{self, MapBuilder};
 use regex::Regex;
+use std::collections::HashMap;
+use std::fmt::Write;
 use std::fs::File;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
-use super::Config;
+use self::expression::Condition;
+use super::{json, Config};
 
 pub mod expression;
 
@@ -24,6 +27,11 @@ concolic.method.{{method_name}}.config={{method_name}}
 jdart.configs.{{method_name}}.symbolic.statics={{package}}.{{class}}
 jdart.configs.{{method_name}}.symbolic.include=this.*;{{package}}.{{class}}.*
 ";
+
+#[derive(Debug, Serialize, Deserialize)]
+struct MethodSummary {
+    summaries: HashMap<String, json::Value>,
+}
 
 fn construct_path(parent: &PathBuf, addition: &str) -> String {
     String::from(parent.join(addition).to_str().unwrap_or_else(|| {
@@ -76,18 +84,95 @@ fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String)
     (name, ret)
 }
 
-pub fn construct_command(config: &Config, output_path: &PathBuf) -> process::Command {
-    let package = "com.google.common.math";
-    let class = "IntMath";
-    let (method_name, method_signature) =
-        parse_java_method(package, class, "public static boolean isPrime(int n) {");
+fn ranges_to_string(ranges: &[(i64, i64)], name: &str, lower: i64, upper: i64) -> Option<String> {
+    if ranges.len() == 0 {
+        return None;
+    }
+    if ranges.len() == 1 && ranges[0] == (lower, upper) {
+        return Some(String::new());
+    }
+    let mut s = String::new();
+    let mut conditions = Vec::new();
+    for &(l, u) in ranges.iter() {
+        s.clear();
+        s.push('(');
+        if l > lower {
+            write!(&mut s, "'{}' >= {}", name, l);
+            if u < upper {
+                s.push_str(" && ");
+            } else {
+                s.push(')');
+            }
+        }
+        if u < upper {
+            write!(&mut s, "'{}' <= {})", name, u);
+        }
+        conditions.push(s.clone());
+    }
+    Some(format!("{}", conditions.join(" || ")))
+}
+
+fn variable_conditions_to_string(m: &HashMap<String, expression::Variable>) -> Option<String> {
+    let mut s = String::new();
+    for (_, var) in m.iter() {
+        let (l, u) = {
+            let range = var.typ.range();
+            range.get_ranges()[0]
+        };
+        let c = ranges_to_string(var.range.get_ranges(), &var.name, l, u)?;
+        if c.len() != 0 {
+            s.push_str(&c);
+        }
+        s.push_str(" && ");
+    }
+    let len = s.len() - 4;
+    s.truncate(len);
+    Some(s)
+}
+
+pub fn process_output(out_json_path: &str) -> Option<String> {
+    let mut conditions = Vec::new();
+    let mut file = File::open(out_json_path).ok()?;
+    let method_summary: MethodSummary = json::from_reader(&mut file).ok()?;
+    for (method_name, summary) in method_summary.summaries.iter() {
+        match summary["okPaths"] {
+            json::Value::Array(ref v) => for ok_path in v.iter() {
+                match ok_path["pathCondition"] {
+                    json::Value::String(ref s) => {
+                        conditions.push(match expression::Expression::from_str(s) {
+                            expression::Expression::Unparsable(s) => s,
+                            expression::Expression::Parsed(Condition::True) => {
+                                return Some(String::from("True"))
+                            }
+                            expression::Expression::Parsed(Condition::Conditions(m)) => {
+                                variable_conditions_to_string(&m)?
+                            }
+                        });
+                    }
+                    _ => unreachable!(),
+                }
+            },
+            _ => unreachable!(),
+        }
+    }
+    Some(format!("({})", conditions.join(") || (")))
+}
+
+pub fn construct_command(
+    config: &Config,
+    output_path: &PathBuf,
+    package: &str,
+    class: &str,
+    method: &str,
+) -> (String, process::Command) {
+    let (method_name, method_signature) = parse_java_method(package, class, method);
     let template = mustache::compile_str(SPF_TEMPLATE).unwrap();
     let jar_path = construct_path(&PathBuf::from(&config.jpf_home), "build/RunJPF.jar");
     let out_json_path = construct_path(output_path, "out.json");
     let run_jpf_path = construct_path(output_path, "run.jpf");
     let template_args = MapBuilder::new()
         .insert_str("classpath", config.classpath.join(";"))
-        .insert_str("output_path", out_json_path)
+        .insert_str("output_path", out_json_path.clone())
         .insert_str("package", package)
         .insert_str("class", class)
         .insert_str("method_name", method_name)
@@ -111,5 +196,5 @@ pub fn construct_command(config: &Config, output_path: &PathBuf) -> process::Com
     cmd.env("JPF_HOME", &config.jpf_home)
         .env("JVM_FLAGS", &config.jvm_flags)
         .args(&args);
-    cmd
+    (out_json_path, cmd)
 }

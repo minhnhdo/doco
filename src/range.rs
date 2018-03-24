@@ -18,6 +18,10 @@ impl Range {
         }
     }
 
+    pub fn get_ranges(&self) -> &Vec<(i64, i64)> {
+        &self.ranges
+    }
+
     pub fn difference(&self, other: &Range) -> Range {
         let self_len = self.ranges.len();
         let other_len = other.ranges.len();

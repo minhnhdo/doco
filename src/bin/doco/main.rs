@@ -42,7 +42,13 @@ pub fn main() {
     });
 
     // construct the command line arguments to pass to jpf
-    let mut cmd = doco::jpf::construct_command(&config, &output_path);
+    let (out_json_path, mut cmd) = doco::jpf::construct_command(
+        &config,
+        &output_path,
+        "com.google.common.math",
+        "IntMath",
+        "public static boolean isPrime(int n) {",
+    );
     println!("Static Analysis:");
     if let Ok(process::Output { stderr, stdout, .. }) = cmd.output() {
         if let Ok(s) = std::str::from_utf8(&stderr) {
@@ -52,6 +58,8 @@ pub fn main() {
             println!("stdout:\n{}\n", s);
         }
     }
+
+    println!("{}", doco::jpf::process_output(&out_json_path).unwrap());
 
     println!("\nDynamic Analysis:");
     // match doco::daikon::infer(&config, &output_path) {

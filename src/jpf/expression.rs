@@ -26,13 +26,20 @@ impl Type {
 
 #[derive(Debug, PartialEq)]
 pub struct Variable {
-    name: String,
-    typ: Type,
-    range: Range,
+    pub name: String,
+    pub typ: Type,
+    pub range: Range,
 }
 
+#[derive(Debug)]
+pub enum Condition {
+    True,
+    Conditions(HashMap<String, Variable>),
+}
+
+#[derive(Debug)]
 pub enum Expression {
-    Parsed(HashMap<String, Variable>),
+    Parsed(Condition),
     Unparsable(String),
 }
 
@@ -200,9 +207,9 @@ named! {
 }
 
 named! {
-    parse_declaration< Option<HashMap<String, Variable>> >,
+    parse_declaration< Option<Condition> >,
     alt_complete!(
-        map!(tag!("[L]true"), |_| Some(HashMap::new()))
+        map!(tag!("[L]true"), |_| Some(Condition::True))
         | map!(
             do_parse!(
                 tag!("[L]declare ") >>
@@ -211,7 +218,7 @@ named! {
                 ast: parse_parentheses >>
                 (vars, ast)
             ),
-            |(mut vars, ast)| { interprete(&mut vars, &ast).map(|()| vars) }
+            |(mut vars, ast)| { interprete(&mut vars, &ast).map(|()| Condition::Conditions(vars)) }
         )
     )
 }
@@ -253,7 +260,7 @@ mod test {
             },
         );
         let (_, output) = parse_declaration(&b"[L]declare 'a':sint64 in (('a' > 0))"[..]).unwrap();
-        assert_eq!(Some(m), output);
+        assert_eq!(Some(Condition::Conditions(m)), output);
     }
 
     #[test]
@@ -278,7 +285,7 @@ mod test {
         let (_, output) = parse_declaration(
             &b"[L]declare 'a':sint32, 'b':sint64 in (((sint64)'a' < 0) && ((sint8)'b' != 2))"[..],
         ).unwrap();
-        assert_eq!(Some(m), output);
+        assert_eq!(Some(Condition::Conditions(m)), output);
     }
 
     #[test]
@@ -303,7 +310,7 @@ mod test {
         let (_, output) = parse_declaration(
             &b"[L]declare 'a':sint32, 'b':sint64 in (((sint64)'a' < 0) && (((sint8)'b' != 2) && ((sint8)'b' <= 12)))"[..],
         ).unwrap();
-        assert_eq!(Some(m), output);
+        assert_eq!(Some(Condition::Conditions(m)), output);
     }
 
     #[test]
@@ -320,6 +327,6 @@ mod test {
         let (_, output) = parse_declaration(
             &b"[L]declare 'n':sint32 in (((sint64)'n' >= 0) && ((sint64)'n' < 2))"[..],
         ).unwrap();
-        assert_eq!(Some(m), output);
+        assert_eq!(Some(Condition::Conditions(m)), output);
     }
 }
