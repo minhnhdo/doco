@@ -209,7 +209,7 @@ impl Range {
         let mut write_head = 0;
         for read_head in 1..ranges.len() {
             let &(c, d) = unsafe { ranges.get_unchecked(read_head) };
-            if b < c {
+            if b < c - 1 {
                 unsafe {
                     *ranges.get_unchecked_mut(write_head) = (a, b);
                 }
@@ -245,11 +245,11 @@ mod test {
     #[test]
     fn test_disjoint_difference() {
         let r1 = Range::from(1, 3);
-        let r2 = Range::from(4, 6);
+        let r2 = Range::from(5, 6);
         let test1 = r1.difference(&r2);
         assert_eq!(vec![(1, 3)], test1.ranges);
         let test2 = r2.difference(&r1);
-        assert_eq!(vec![(4, 6)], test2.ranges);
+        assert_eq!(vec![(5, 6)], test2.ranges);
     }
 
     #[test]
@@ -264,12 +264,12 @@ mod test {
 
     #[test]
     fn test_complex_overlapping_difference() {
-        let r1 = Range::from(1, 10);
+        let r1 = Range::from(1, 12);
         let r2 = Range::from(2, 4)
-            .union(&Range::from(5, 7))
-            .union(&Range::from(8, 9));
+            .union(&Range::from(6, 7))
+            .union(&Range::from(9, 11));
         let test1 = r1.difference(&r2);
-        assert_eq!(vec![(1, 1), (10, 10)], test1.ranges);
+        assert_eq!(vec![(1, 1), (5, 5), (8, 8), (12, 12)], test1.ranges);
         let test2 = r2.difference(&r1);
         assert_eq!(Vec::<(i64, i64)>::new(), test2.ranges);
     }
@@ -286,12 +286,12 @@ mod test {
 
     #[test]
     fn test_complex_difference() {
-        let r1 = Range::from(1, 4).union(&Range::from(5, 7));
-        let r2 = Range::from(3, 6).union(&Range::from(7, 8));
+        let r1 = Range::from(1, 4).union(&Range::from(6, 7));
+        let r2 = Range::from(3, 5).union(&Range::from(7, 8));
         let test1 = r1.difference(&r2);
-        assert_eq!(vec![(1, 2)], test1.ranges);
+        assert_eq!(vec![(1, 2), (6, 6)], test1.ranges);
         let test2 = r2.difference(&r1);
-        assert_eq!(vec![(8, 8)], test2.ranges);
+        assert_eq!(vec![(5, 5), (8, 8)], test2.ranges);
     }
 
     #[test]
@@ -307,11 +307,11 @@ mod test {
     #[test]
     fn test_disjoint_union() {
         let r1 = Range::from(1, 3);
-        let r2 = Range::from(4, 6);
+        let r2 = Range::from(5, 6);
         let test1 = r1.union(&r2);
-        assert_eq!(vec![(1, 3), (4, 6)], test1.ranges);
+        assert_eq!(vec![(1, 3), (5, 6)], test1.ranges);
         let test2 = r2.union(&r1);
-        assert_eq!(vec![(1, 3), (4, 6)], test2.ranges);
+        assert_eq!(vec![(1, 3), (5, 6)], test2.ranges);
     }
 
     #[test]
@@ -326,14 +326,14 @@ mod test {
 
     #[test]
     fn test_complex_overlapping_union() {
-        let r1 = Range::from(1, 10);
+        let r1 = Range::from(1, 12);
         let r2 = Range::from(2, 4)
-            .union(&Range::from(5, 7))
-            .union(&Range::from(8, 9));
+            .union(&Range::from(6, 7))
+            .union(&Range::from(9, 11));
         let test1 = r1.union(&r2);
-        assert_eq!(vec![(1, 10)], test1.ranges);
+        assert_eq!(vec![(1, 12)], test1.ranges);
         let test2 = r2.union(&r1);
-        assert_eq!(vec![(1, 10)], test2.ranges);
+        assert_eq!(vec![(1, 12)], test2.ranges);
     }
 
     #[test]
@@ -348,8 +348,8 @@ mod test {
 
     #[test]
     fn test_complex_union() {
-        let r1 = Range::from(1, 4).union(&Range::from(5, 7));
-        let r2 = Range::from(3, 6).union(&Range::from(7, 8));
+        let r1 = Range::from(1, 4).union(&Range::from(6, 7));
+        let r2 = Range::from(3, 5).union(&Range::from(7, 8));
         let test1 = r1.union(&r2);
         assert_eq!(vec![(1, 8)], test1.ranges);
         let test2 = r2.union(&r1);
@@ -369,7 +369,7 @@ mod test {
     #[test]
     fn test_disjoint_intersection() {
         let r1 = Range::from(1, 3);
-        let r2 = Range::from(4, 6);
+        let r2 = Range::from(5, 6);
         let test1 = r1.intersect(&r2);
         assert_eq!(Vec::<(i64, i64)>::new(), test1.ranges);
         let test2 = r2.intersect(&r1);
@@ -388,14 +388,14 @@ mod test {
 
     #[test]
     fn test_complex_overlapping_intersection() {
-        let r1 = Range::from(1, 6).union(&Range::from(7, 9));
+        let r1 = Range::from(1, 12);
         let r2 = Range::from(2, 4)
-            .union(&Range::from(5, 8))
-            .union(&Range::from(9, 10));
+            .union(&Range::from(6, 7))
+            .union(&Range::from(9, 11));
         let test1 = r1.intersect(&r2);
-        assert_eq!(vec![(2, 4), (5, 6), (7, 8), (9, 9)], test1.ranges);
+        assert_eq!(vec![(2, 4), (6, 7), (9, 11)], test1.ranges);
         let test2 = r2.intersect(&r1);
-        assert_eq!(vec![(2, 4), (5, 6), (7, 8), (9, 9)], test2.ranges);
+        assert_eq!(vec![(2, 4), (6, 7), (9, 11)], test2.ranges);
     }
 
     #[test]
@@ -410,11 +410,11 @@ mod test {
 
     #[test]
     fn test_complex_intersection() {
-        let r1 = Range::from(1, 4).union(&Range::from(5, 7));
-        let r2 = Range::from(3, 6).union(&Range::from(7, 8));
+        let r1 = Range::from(1, 4).union(&Range::from(6, 7));
+        let r2 = Range::from(3, 5).union(&Range::from(7, 9));
         let test1 = r1.intersect(&r2);
-        assert_eq!(vec![(3, 4), (5, 6), (7, 7)], test1.ranges);
+        assert_eq!(vec![(3, 4), (7, 7)], test1.ranges);
         let test2 = r2.intersect(&r1);
-        assert_eq!(vec![(3, 4), (5, 6), (7, 7)], test2.ranges);
+        assert_eq!(vec![(3, 4), (7, 7)], test2.ranges);
     }
 }
