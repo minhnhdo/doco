@@ -6,6 +6,8 @@ use std::process::{self, Command};
 
 use super::Config;
 
+pub mod expression;
+
 static SPF_TEMPLATE: &str = r"
 shell=gov.nasa.jpf.jdart.summaries.MethodSummarizer
 report.console.start=
@@ -16,7 +18,7 @@ symbolic.dp.z3.bitvectors=true
 target={{package}}.{{class}}
 classpath={{classpath}}
 jdart.summarystore={{output_path}}
-summary.methods=isPrime
+summary.methods={{method_name}}
 concolic.method.{{method_name}}={{method_signature}}
 concolic.method.{{method_name}}.config={{method_name}}
 jdart.configs.{{method_name}}.symbolic.statics={{package}}.{{class}}
@@ -24,13 +26,10 @@ jdart.configs.{{method_name}}.symbolic.include=this.*;{{package}}.{{class}}.*
 ";
 
 fn construct_path(parent: &PathBuf, addition: &str) -> String {
-    String::from(parent
-                     .join(addition)
-                     .to_str()
-                     .unwrap_or_else(|| {
-                                         eprintln!("Unable to construct path to {}", addition);
-                                         process::exit(1);
-                                     }))
+    String::from(parent.join(addition).to_str().unwrap_or_else(|| {
+        eprintln!("Unable to construct path to {}", addition);
+        process::exit(1);
+    }))
 }
 
 fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String) {
@@ -49,22 +48,20 @@ fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String)
         ret.push('(');
         for arg in cap["arglist"].split(',') {
             let mut split_arg = arg.split_whitespace();
-            let type_ = split_arg
-                .next()
-                .unwrap_or_else(|| {
-                    eprintln!("Unable to extract the type for argument {} of method {}",
-                              arg,
-                              name);
-                    process::exit(1);
-                });
-            let arg_name = split_arg
-                .next()
-                .unwrap_or_else(|| {
-                    eprintln!("Unable to extract the name for argument {} of method {}",
-                              arg,
-                              name);
-                    process::exit(1);
-                });
+            let type_ = split_arg.next().unwrap_or_else(|| {
+                eprintln!(
+                    "Unable to extract the type for argument {} of method {}",
+                    arg, name
+                );
+                process::exit(1);
+            });
+            let arg_name = split_arg.next().unwrap_or_else(|| {
+                eprintln!(
+                    "Unable to extract the name for argument {} of method {}",
+                    arg, name
+                );
+                process::exit(1);
+            });
             if split_arg.next().is_some() {
                 eprintln!("Malformed argument {} in method {}", arg, name);
                 process::exit(1);
@@ -103,9 +100,9 @@ pub fn construct_command(config: &Config, output_path: &PathBuf) -> process::Com
     template
         .render_data(&mut run_jpf_file, &template_args)
         .unwrap_or_else(|err| {
-                            eprintln!("Unable to render {}, err = {}", &run_jpf_path, err);
-                            process::exit(1);
-                        });
+            eprintln!("Unable to render {}, err = {}", &run_jpf_path, err);
+            process::exit(1);
+        });
     let mut args: Vec<&str> = config.jvm_flags.split(' ').collect();
     args.push("-jar");
     args.push(&jar_path);

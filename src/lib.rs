@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate mustache;
+#[macro_use]
+extern crate nom;
 extern crate rand;
 extern crate regex;
 extern crate serde;
@@ -55,12 +57,4 @@ pub fn read_file_to_string(path: &str) -> io::Result<String> {
     let mut string = String::new();
     File::open(path)?.read_to_string(&mut string)?;
     Ok(string)
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
 }
