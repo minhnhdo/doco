@@ -1,13 +1,13 @@
 use mustache::{self, MapBuilder};
 use regex::Regex;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::Write;
 use std::fs::File;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
 use self::expression::Condition;
-use super::{json, range, Config};
+use super::{json, Config};
 
 pub mod expression;
 
@@ -125,91 +125,86 @@ fn variable_conditions_to_string(m: &HashMap<String, expression::Variable>) -> O
         }
         s.push_str(" && ");
     }
-    let len = s.len() - 4;
-    s.truncate(len);
+    if s.len() > 4 {
+        let len = s.len() - 4;
+        s.truncate(len);
+        return Some(s);
+    }
     Some(s)
 }
 
 pub fn process_output(out_json_path: &str) -> Option<String> {
-    let mut conditions = Vec::new();
     let mut file = File::open(out_json_path).ok()?;
     let method_summary: MethodSummary = json::from_reader(&mut file).ok()?;
+    let mut unparsable = Vec::new();
+    let mut parsable_with_one_variable = HashMap::new();
+    let mut parsable_with_multiple_variables = Vec::new();
+    let mut has_error_paths = false;
     for (method_name, summary) in method_summary.summaries.iter() {
+        if let json::Value::Array(ref v) = summary["errorPaths"] {
+            has_error_paths = v.len() > 0;
+        }
         match summary["okPaths"] {
             json::Value::Array(ref v) => for ok_path in v.iter() {
                 match ok_path["pathCondition"] {
-                    json::Value::String(ref s) => {
-                        conditions.push(expression::Expression::from_str(s));
-                    }
+                    json::Value::String(ref s) => match expression::Expression::from_str(s) {
+                        expression::Expression::Unparsable(s) => unparsable.push(s),
+                        expression::Expression::Parsed(Condition::True) => {
+                            return Some(String::from("True"))
+                        }
+                        expression::Expression::Parsed(Condition::Conditions(mut m)) => {
+                            if m.len() == 1 {
+                                match m.drain().take(1).next() {
+                                    Some((name, var)) => {
+                                        if !parsable_with_one_variable.contains_key(&name) {
+                                            parsable_with_one_variable.insert(name, var);
+                                        } else {
+                                            let range = parsable_with_one_variable[&name]
+                                                .range
+                                                .union(&var.range);
+                                            parsable_with_one_variable
+                                                .get_mut(&name)
+                                                .unwrap()
+                                                .range = range;
+                                        }
+                                    }
+                                    _ => unreachable!(),
+                                }
+                            } else {
+                                parsable_with_multiple_variables.push(m);
+                            }
+                        }
+                    },
                     _ => unreachable!(),
                 }
             },
             _ => unreachable!(),
         }
     }
-    // special cases
-    if conditions.len() == 0 {
+    if unparsable.len() == 0 && parsable_with_one_variable.len() == 0
+        && parsable_with_multiple_variables.len() == 0
+    {
+        return Some(String::from(if has_error_paths {
+            "True"
+        } else {
+            "No satisfiable value"
+        }));
+    }
+    let single_var_conditions = variable_conditions_to_string(&parsable_with_one_variable)?;
+    if single_var_conditions.len() != 0 {
+        unparsable.push(single_var_conditions);
+    }
+    for cond in parsable_with_multiple_variables.iter() {
+        unparsable.push(variable_conditions_to_string(cond)?);
+    }
+    if unparsable.len() == 1 {
+        return Some(unparsable[0].clone());
+    }
+    let ret = unparsable.join(") || (");
+    if ret == "" {
         return Some(String::from("True"));
     }
-    if conditions.iter().any(|e| {
-        if let &expression::Expression::Parsed(Condition::True) = e {
-            true
-        } else {
-            false
-        }
-    }) {
-        return Some(String::from("True"));
-    }
-    let mut simple = true;
-    let mut vars = HashSet::new();
-    for cond in conditions.iter() {
-        if let &expression::Expression::Parsed(Condition::Conditions(ref m)) = cond {
-            vars.extend(m.keys());
-        } else {
-            simple = false;
-            break;
-        }
-    }
-    if simple && vars.len() == 1 {
-        let mut name = String::new();
-        let mut typ = expression::Type::SInt8;
-        let mut range = range::Range::from(3, 1); // empty range
-        match conditions[0] {
-            expression::Expression::Parsed(Condition::Conditions(ref m)) => for v in m.values() {
-                typ = v.typ.clone();
-                name = v.name.clone();
-            },
-            _ => unreachable!(),
-        }
-        for cond in conditions.iter() {
-            match cond {
-                &expression::Expression::Parsed(Condition::Conditions(ref m)) => {
-                    for v in m.values() {
-                        range = range.union(&v.range);
-                    }
-                }
-                _ => unreachable!(),
-            }
-        }
-        let mut m = HashMap::new();
-        m.insert(name.clone(), expression::Variable { name, typ, range });
-        return match variable_conditions_to_string(&m) {
-            Some(ref s) if s == "" => Some(String::from("True")),
-            ret @ _ => ret,
-        };
-    }
-    // nothing works :( apply best effort
-    let mut vs = Vec::new();
-    for cond in conditions.iter() {
-        vs.push(match cond {
-            &expression::Expression::Parsed(Condition::Conditions(ref m)) => {
-                variable_conditions_to_string(&m)?
-            }
-            &expression::Expression::Unparsable(ref s) => s.clone(),
-            _ => unreachable!(),
-        })
-    }
-    Some(format!("({})", vs.join(") || (")))
+    Some(format!("({})", ret))
 }
 
 pub fn construct_command(
