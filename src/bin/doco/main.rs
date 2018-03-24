@@ -2,6 +2,7 @@ extern crate doco;
 
 use std::env;
 use std::process;
+use std::io::Read;
 
 use doco::daikon::invariants;
 use doco::Config;
@@ -41,26 +42,41 @@ pub fn main() {
         process::exit(1);
     });
 
-    // construct the command line arguments to pass to jpf
+    // construct the environment for JPF
     let (out_json_path, mut cmd) =
         doco::jpf::setup_environment(&config, &output_path, &args[2], &args[3], &args[4])
             .unwrap_or_else(|e| {
                 eprintln!("Unable to setup JFP environment, err = {}", e.description());
                 process::exit(1);
             });
-    println!("Static Analysis:");
-    if let Ok(process::Output { stderr, stdout, .. }) = cmd.output() {
-        if let Ok(s) = std::str::from_utf8(&stderr) {
-            println!("stderr:\n{}\n", s);
-        }
-        if let Ok(s) = std::str::from_utf8(&stdout) {
-            println!("stdout:\n{}\n", s);
-        }
+    println!("Spawning JPF");
+    let mut jpf = cmd.spawn().unwrap_or_else(|e| {
+        eprintln!("Unable to execute JFP, err = {}", e);
+        process::exit(1);
+    });
+    let jpf_succeeded: bool;
+    match jpf.try_wait() {
+        Ok(Some(status)) => jpf_succeeded = status.success(),
+        _ => match jpf.wait() {
+            Ok(status) => jpf_succeeded = status.success(),
+            _ => jpf_succeeded = false,
+        },
     }
-
-    match doco::jpf::process_output(&out_json_path) {
-        Ok(s) => println!("{}", s),
-        Err(e) => println!("{}", e.description()),
+    // JPF must have finished before the next if
+    if jpf_succeeded {
+        match doco::jpf::process_output(&out_json_path) {
+            Ok(s) => println!("{}", s),
+            Err(e) => eprintln!("Error: {}", e.description()),
+        }
+    } else {
+        let mut stdout = String::new();
+        let mut stderr = String::new();
+        jpf.stdout.unwrap().read_to_string(&mut stdout);
+        jpf.stderr.unwrap().read_to_string(&mut stderr);
+        eprintln!(
+            "JFP exited with an error, stdout = {}, stderr = {}",
+            &stdout, &stderr
+        );
     }
 
     println!("\nDynamic Analysis:");
