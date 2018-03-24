@@ -31,7 +31,7 @@ pub struct Variable {
     pub range: Range,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Condition {
     True,
     Conditions(HashMap<String, Variable>),
@@ -229,8 +229,8 @@ mod test {
     use std::collections::HashMap;
     use std::{i32, i64};
 
-    use super::{parse_comparision, parse_declaration, parse_variable_declaration, Ast, Range,
-                Type, Variable};
+    use super::{parse_comparision, parse_declaration, parse_variable_declaration, Ast, Condition,
+                Range, Type, Variable};
 
     #[test]
     fn test_parse_variable_declaration() {

@@ -1,13 +1,13 @@
 use mustache::{self, MapBuilder};
 use regex::Regex;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Write;
 use std::fs::File;
 use std::path::PathBuf;
 use std::process::{self, Command};
 
 use self::expression::Condition;
-use super::{json, Config};
+use super::{json, range, Config};
 
 pub mod expression;
 
@@ -139,15 +139,7 @@ pub fn process_output(out_json_path: &str) -> Option<String> {
             json::Value::Array(ref v) => for ok_path in v.iter() {
                 match ok_path["pathCondition"] {
                     json::Value::String(ref s) => {
-                        conditions.push(match expression::Expression::from_str(s) {
-                            expression::Expression::Unparsable(s) => s,
-                            expression::Expression::Parsed(Condition::True) => {
-                                return Some(String::from("True"))
-                            }
-                            expression::Expression::Parsed(Condition::Conditions(m)) => {
-                                variable_conditions_to_string(&m)?
-                            }
-                        });
+                        conditions.push(expression::Expression::from_str(s));
                     }
                     _ => unreachable!(),
                 }
@@ -155,7 +147,69 @@ pub fn process_output(out_json_path: &str) -> Option<String> {
             _ => unreachable!(),
         }
     }
-    Some(format!("({})", conditions.join(") || (")))
+    // special cases
+    if conditions.len() == 0 {
+        return Some(String::from("True"));
+    }
+    if conditions.iter().any(|e| {
+        if let &expression::Expression::Parsed(Condition::True) = e {
+            true
+        } else {
+            false
+        }
+    }) {
+        return Some(String::from("True"));
+    }
+    let mut simple = true;
+    let mut vars = HashSet::new();
+    for cond in conditions.iter() {
+        if let &expression::Expression::Parsed(Condition::Conditions(ref m)) = cond {
+            vars.extend(m.keys());
+        } else {
+            simple = false;
+            break;
+        }
+    }
+    if simple && vars.len() == 1 {
+        let mut name = String::new();
+        let mut typ = expression::Type::SInt8;
+        let mut range = range::Range::from(3, 1); // empty range
+        match conditions[0] {
+            expression::Expression::Parsed(Condition::Conditions(ref m)) => for v in m.values() {
+                typ = v.typ.clone();
+                name = v.name.clone();
+            },
+            _ => unreachable!(),
+        }
+        for cond in conditions.iter() {
+            match cond {
+                &expression::Expression::Parsed(Condition::Conditions(ref m)) => {
+                    for v in m.values() {
+                        range = range.union(&v.range);
+                    }
+                }
+                _ => unreachable!(),
+            }
+        }
+        let mut m = HashMap::new();
+        m.insert(name.clone(), expression::Variable { name, typ, range });
+        return match variable_conditions_to_string(&m) {
+            Some(ref s) if s == "" => Some(String::from("True")),
+            ret @ _ => ret,
+        };
+    }
+    // nothing works :( apply best effort
+    let mut vs = Vec::new();
+    for cond in conditions.iter() {
+        vs.push(match cond {
+            &expression::Expression::Parsed(Condition::Conditions(ref m)) => {
+                variable_conditions_to_string(&m)?
+            }
+            &expression::Expression::Unparsable(ref s) => s.clone(),
+            _ => unreachable!(),
+        })
+    }
+    Some(format!("({})", vs.join(") || (")))
 }
 
 pub fn construct_command(
