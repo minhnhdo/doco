@@ -85,33 +85,27 @@ impl Error for InvalidPath {
 }
 
 #[derive(Debug)]
-enum JavaParseError {
-    Type(String),
-    Name(String),
-    Malformed(String),
+struct JavaArgParseError {
+    description: String,
 }
 
-impl fmt::Display for JavaParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "{}",
-            match self {
-                &JavaParseError::Type(ref s) => s,
-                &JavaParseError::Name(ref s) => s,
-                &JavaParseError::Malformed(ref s) => s,
-            }
-        )
+impl JavaArgParseError {
+    fn from(arg: &str, method: &str) -> JavaArgParseError {
+        JavaArgParseError {
+            description: format!("Malformed argument {} in method {}", arg, method),
+        }
     }
 }
 
-impl Error for JavaParseError {
+impl fmt::Display for JavaArgParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", &self.description)
+    }
+}
+
+impl Error for JavaArgParseError {
     fn description(&self) -> &str {
-        match self {
-            &JavaParseError::Type(ref s) => s,
-            &JavaParseError::Name(ref s) => s,
-            &JavaParseError::Malformed(ref s) => s,
-        }
+        &self.description
     }
 }
 
@@ -142,28 +136,15 @@ fn parse_java_method(
         ret.push_str(&name);
         ret.push('(');
         for arg in cap["arglist"].split(',') {
-            let mut split_arg = arg.split_whitespace();
-            let type_ = split_arg.next().ok_or_else(|| {
-                Box::new(JavaParseError::Type(format!(
-                    "Unable to extract the type for argument {} of method {}",
-                    arg, name
-                )))
-            })?;
-            let arg_name = split_arg.next().ok_or_else(|| {
-                Box::new(JavaParseError::Name(format!(
-                    "Unable to extract the name for argument {} of method {}",
-                    arg, name
-                )))
-            })?;
-            if split_arg.next().is_some() {
-                return Err(Box::new(JavaParseError::Malformed(format!(
-                    "Malformed argument {} in method {}",
-                    arg, name
-                ))));
+            let processed: Vec<&str> = arg.split_whitespace()
+                .filter(|e| !e.starts_with('@'))
+                .collect();
+            if processed.len() != 2 {
+                return Err(Box::new(JavaArgParseError::from(arg, &name)));
             }
-            ret.push_str(arg_name);
+            ret.push_str(processed[1]);
             ret.push(':');
-            ret.push_str(type_);
+            ret.push_str(processed[0]);
             ret.push(',');
         }
         ret.push(')');
