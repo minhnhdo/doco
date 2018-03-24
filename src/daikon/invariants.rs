@@ -8,7 +8,7 @@ pub struct Invariants {}
 
 // maps a name (object or method) to a list of inferred pre- and post-conditions
 pub struct InvariantList {
-    map: HashMap<String, Inferences>,
+    map: HashMap<String, Vec<Inferences>>,
 }
 
 const DAIKON_OBJ: &str = "OBJECT";
@@ -27,21 +27,27 @@ impl fmt::Display for InvariantList {
         let mut posts = 0;
 
         for (entity, inferences) in &self.map {
-            write!(f, "{}\n", entity);
+            write!(f, "{}\n", entity)?;
 
-            if inferences.pre.len() > 0 {
-                write!(f, "\tPre-conditions:\n");
-                for inv in inferences.pre.iter() {
-                    pres += 1;
-                    write!(f, "\t\t{}\n", inv);
+            for inf in inferences.iter() {
+                if inf.cond.len() > 0 {
+                    write!(f, "\t(when {})\n", inf.cond)?;
                 }
-            }
 
-            if inferences.post.len() > 0 {
-                write!(f, "\tPost-conditions:\n");
-                for inv in inferences.post.iter() {
-                    posts += 1;
-                    write!(f, "\t\t{}\n", inv);
+                if inf.pre.len() > 0 {
+                    write!(f, "\tPre-conditions:\n")?;
+                    for inv in inf.pre.iter() {
+                        pres += 1;
+                        write!(f, "\t\t{}\n", inv)?;
+                    }
+                }
+
+                if inf.post.len() > 0 {
+                    write!(f, "\tPost-conditions:\n")?;
+                    for inv in inf.post.iter() {
+                        posts += 1;
+                        write!(f, "\t\t{}\n", inv)?;
+                    }
                 }
             }
         }
@@ -56,6 +62,7 @@ impl fmt::Display for InvariantList {
 
 #[derive(Clone, Debug)]
 pub struct Inferences {
+    cond: Expression, // when the pre- and post-conditions apply
     pre: Vec<Invariant>, // list of pre-conditions
     post: Vec<Invariant>, // list of post-conditions
 }
@@ -106,16 +113,18 @@ impl fmt::Display for Invariant {
 impl Invariants {
     fn parse(daikon_inv: &str) -> InvariantList {
         let mut ret = HashMap::new();
+        let mut inferences = Vec::new();
+        let mut curr_cond = String::new();
         let mut pre = Vec::new();
         let mut post = Vec::new();
 
         let mut dstarted = false; // daikon invariants started
-
         let sep = Regex::new(r"^=+$").unwrap();
-        let entity_def = Regex::new(r"^(\S+):::([\S]+)$").unwrap();
+        let entity_def = Regex::new(r"^(\S+):::([A-Za-z0-9]+);?(.*)$").unwrap();
+        let condition_re = Regex::new("condition=\"(.*)\"").unwrap();
 
         let mut inftype = InfType::PreCondition;
-        let mut curr_entity = String::from("");
+        let mut curr_entity = String::new();
 
         for (i, line) in daikon_inv.split("\n").enumerate() {
             // skip Daikon header
@@ -135,24 +144,46 @@ impl Invariants {
             // Object/Method start/end
             if entity_def.is_match(line) {
                 for cap in entity_def.captures_iter(line) {
-                    match &cap[2] {
-                        DAIKON_OBJ => inftype = InfType::PreCondition,
-                        DAIKON_ENTER => {
-                            if curr_entity.len() > 0 {
-                                ret.insert(curr_entity,
-                                           Inferences {
-                                               pre: pre.to_owned(),
-                                               post: post.to_owned(),
-                                           });
-                            }
+                    let mut new_cond = String::new();
 
-                            inftype = InfType::PreCondition;
-                        }
+                    match &cap[2] {
+                        DAIKON_OBJ | DAIKON_ENTER => inftype = InfType::PreCondition,
                         DAIKON_EXIT => inftype = InfType::PostCondition,
-                        _ => println!("Skipping (line {}): {}", i + 1, &cap[2]),
+                        _ => eprintln!("Skipping (line {}): {}", i + 1, &cap[2]),
                     };
 
+                    // condition is supported?
+                    if condition_re.is_match(&cap[3]) {
+                        for cap in condition_re.captures_iter(&cap[3]) {
+                            new_cond = String::from(&cap[1]);
+                        }
+                    } else {
+                        new_cond = String::new();
+                    }
+
+                    // verify updates in method names and inference conditions
+                    let changed_entity = curr_entity != cap[1].to_string() && curr_entity.len() > 0;
+                    let same_entity = curr_entity == cap[1].to_string();
+                    let cond_changed = curr_cond != new_cond;
+
+                    if changed_entity || (same_entity && cond_changed) {
+                        inferences.push(Inferences {
+                                            cond: curr_cond.to_owned(),
+                                            pre: pre.to_owned(),
+                                            post: post.to_owned(),
+                                        });
+
+                        pre = Vec::new();
+                        post = Vec::new();
+                    }
+
+                    if changed_entity {
+                        ret.insert(curr_entity.to_owned(), inferences.to_owned());
+                        inferences = Vec::new();
+                    }
+
                     curr_entity = cap[1].to_string();
+                    curr_cond = new_cond.to_owned();
                 }
 
                 continue;
@@ -161,7 +192,7 @@ impl Invariants {
             // invariant definition
             let implies = Regex::new(r"==>").unwrap();
             if implies.is_match(line) {
-                println!("Skipping unsupported syntax: {}", line);
+                eprintln!("Skipping unsupported syntax: {}", line);
                 continue;
             }
 
@@ -188,10 +219,10 @@ impl Invariants {
                     match inftype {
                         InfType::PreCondition => pre.push(inv),
                         InfType::PostCondition => post.push(inv),
-                    }
+                    };
                 }
             } else {
-                println!("Warning: skipping line {}: {}", i + 1, line);
+                eprintln!("Warning: skipping line {}: {}", i + 1, line);
             }
         }
 
