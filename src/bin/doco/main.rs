@@ -8,7 +8,7 @@ use doco::Config;
 
 fn usage(program_name: &str) {
     eprintln!(
-        "Usage: {} <json config>|<path/to/config.json>",
+        "Usage: {} <json config>|<path/to/config.json> <package> <class> <method signature>",
         program_name
     );
     process::exit(1);
@@ -16,7 +16,7 @@ fn usage(program_name: &str) {
 
 pub fn main() {
     let args: Vec<String> = ::std::env::args().collect();
-    if args.len() != 2 {
+    if args.len() != 5 {
         usage(&args[0]);
     }
     let config = {
@@ -42,16 +42,12 @@ pub fn main() {
     });
 
     // construct the command line arguments to pass to jpf
-    let (out_json_path, mut cmd) = doco::jpf::setup_environment(
-        &config,
-        &output_path,
-        "com.google.common.math",
-        "IntMath",
-        "public static boolean isPrime(int n) {",
-    ).unwrap_or_else(|e| {
-        eprintln!("Unable to setup JFP environment, err = {}", e.description());
-        process::exit(1);
-    });
+    let (out_json_path, mut cmd) =
+        doco::jpf::setup_environment(&config, &output_path, &args[2], &args[3], &args[4])
+            .unwrap_or_else(|e| {
+                eprintln!("Unable to setup JFP environment, err = {}", e.description());
+                process::exit(1);
+            });
     println!("Static Analysis:");
     if let Ok(process::Output { stderr, stdout, .. }) = cmd.output() {
         if let Ok(s) = std::str::from_utf8(&stderr) {
