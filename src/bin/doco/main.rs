@@ -42,13 +42,16 @@ pub fn main() {
     });
 
     // construct the command line arguments to pass to jpf
-    let (out_json_path, mut cmd) = doco::jpf::construct_command(
+    let (out_json_path, mut cmd) = doco::jpf::setup_environment(
         &config,
         &output_path,
         "com.google.common.math",
         "IntMath",
         "public static boolean isPrime(int n) {",
-    );
+    ).unwrap_or_else(|e| {
+        eprintln!("Unable to setup JFP environment, err = {}", e.description());
+        process::exit(1);
+    });
     println!("Static Analysis:");
     if let Ok(process::Output { stderr, stdout, .. }) = cmd.output() {
         if let Ok(s) = std::str::from_utf8(&stderr) {

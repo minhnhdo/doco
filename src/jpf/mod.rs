@@ -59,14 +59,75 @@ impl Error for NoValidValue {
     }
 }
 
-fn construct_path(parent: &PathBuf, addition: &str) -> String {
-    String::from(parent.join(addition).to_str().unwrap_or_else(|| {
-        eprintln!("Unable to construct path to {}", addition);
-        process::exit(1);
-    }))
+#[derive(Debug)]
+struct InvalidPath {
+    description: String,
 }
 
-fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String) {
+impl InvalidPath {
+    fn from(addition: &str) -> InvalidPath {
+        InvalidPath {
+            description: format!("Unable to construct path to {}", addition),
+        }
+    }
+}
+
+impl fmt::Display for InvalidPath {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", &self.description)
+    }
+}
+
+impl Error for InvalidPath {
+    fn description(&self) -> &str {
+        &self.description
+    }
+}
+
+#[derive(Debug)]
+enum JavaParseError {
+    Type(String),
+    Name(String),
+    Malformed(String),
+}
+
+impl fmt::Display for JavaParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(
+            f,
+            "{}",
+            match self {
+                &JavaParseError::Type(ref s) => s,
+                &JavaParseError::Name(ref s) => s,
+                &JavaParseError::Malformed(ref s) => s,
+            }
+        )
+    }
+}
+
+impl Error for JavaParseError {
+    fn description(&self) -> &str {
+        match self {
+            &JavaParseError::Type(ref s) => s,
+            &JavaParseError::Name(ref s) => s,
+            &JavaParseError::Malformed(ref s) => s,
+        }
+    }
+}
+
+fn construct_path(parent: &PathBuf, addition: &str) -> Result<String, Box<Error>> {
+    parent
+        .join(addition)
+        .to_str()
+        .map(String::from)
+        .ok_or_else(|| Box::new(InvalidPath::from(addition)) as Box<Error>)
+}
+
+fn parse_java_method(
+    package: &str,
+    class: &str,
+    decl: &str,
+) -> Result<(String, String), Box<Error>> {
     lazy_static! {
         static ref RE: Regex = Regex::new(r"(?P<name>\w+)[ \t]*\([ \t]*(?P<arglist>[^\)]*)[ \t]*\)").unwrap();
     }
@@ -82,23 +143,23 @@ fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String)
         ret.push('(');
         for arg in cap["arglist"].split(',') {
             let mut split_arg = arg.split_whitespace();
-            let type_ = split_arg.next().unwrap_or_else(|| {
-                eprintln!(
+            let type_ = split_arg.next().ok_or_else(|| {
+                Box::new(JavaParseError::Type(format!(
                     "Unable to extract the type for argument {} of method {}",
                     arg, name
-                );
-                process::exit(1);
-            });
-            let arg_name = split_arg.next().unwrap_or_else(|| {
-                eprintln!(
+                )))
+            })?;
+            let arg_name = split_arg.next().ok_or_else(|| {
+                Box::new(JavaParseError::Name(format!(
                     "Unable to extract the name for argument {} of method {}",
                     arg, name
-                );
-                process::exit(1);
-            });
+                )))
+            })?;
             if split_arg.next().is_some() {
-                eprintln!("Malformed argument {} in method {}", arg, name);
-                process::exit(1);
+                return Err(Box::new(JavaParseError::Malformed(format!(
+                    "Malformed argument {} in method {}",
+                    arg, name
+                ))));
             }
             ret.push_str(arg_name);
             ret.push(':');
@@ -107,7 +168,7 @@ fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String)
         }
         ret.push(')');
     }
-    (name, ret)
+    Ok((name, ret))
 }
 
 fn ranges_to_string(
@@ -128,7 +189,7 @@ fn ranges_to_string(
         s.clear();
         s.push('(');
         if l > lower {
-            write!(&mut s, "'{}' >= {}", name, l);
+            write!(&mut s, "'{}' >= {}", name, l)?;
             if u < upper {
                 s.push_str(" && ");
             } else {
@@ -136,7 +197,7 @@ fn ranges_to_string(
             }
         }
         if u < upper {
-            write!(&mut s, "'{}' <= {})", name, u);
+            write!(&mut s, "'{}' <= {})", name, u)?;
         }
         conditions.push(s.clone());
     }
@@ -172,7 +233,7 @@ pub fn process_output(out_json_path: &str) -> Result<String, Box<Error>> {
     let mut parsable_with_one_variable = HashMap::new();
     let mut parsable_with_multiple_variables = Vec::new();
     let mut has_error_paths = false;
-    for (method_name, summary) in method_summary.summaries.iter() {
+    for (_method_name, summary) in method_summary.summaries.iter() {
         if let json::Value::Array(ref v) = summary["errorPaths"] {
             has_error_paths = v.len() > 0;
         }
@@ -239,18 +300,18 @@ pub fn process_output(out_json_path: &str) -> Result<String, Box<Error>> {
     Ok(format!("({})", ret))
 }
 
-pub fn construct_command(
+pub fn setup_environment(
     config: &Config,
     output_path: &PathBuf,
     package: &str,
     class: &str,
     method: &str,
-) -> (String, process::Command) {
-    let (method_name, method_signature) = parse_java_method(package, class, method);
+) -> Result<(String, process::Command), Box<Error>> {
+    let (method_name, method_signature) = parse_java_method(package, class, method)?;
     let template = mustache::compile_str(SPF_TEMPLATE).unwrap();
-    let jar_path = construct_path(&PathBuf::from(&config.jpf_home), "build/RunJPF.jar");
-    let out_json_path = construct_path(output_path, "out.json");
-    let run_jpf_path = construct_path(output_path, "run.jpf");
+    let jar_path = construct_path(&PathBuf::from(&config.jpf_home), "build/RunJPF.jar")?;
+    let out_json_path = construct_path(output_path, "out.json")?;
+    let run_jpf_path = construct_path(output_path, "run.jpf")?;
     let template_args = MapBuilder::new()
         .insert_str("classpath", config.classpath.join(";"))
         .insert_str("output_path", out_json_path.clone())
@@ -259,16 +320,8 @@ pub fn construct_command(
         .insert_str("method_name", method_name)
         .insert_str("method_signature", method_signature)
         .build();
-    let mut run_jpf_file = File::create(&run_jpf_path).unwrap_or_else(|err| {
-        eprintln!("Unable to create {}, err = {}", &run_jpf_path, err);
-        process::exit(1);
-    });
-    template
-        .render_data(&mut run_jpf_file, &template_args)
-        .unwrap_or_else(|err| {
-            eprintln!("Unable to render {}, err = {}", &run_jpf_path, err);
-            process::exit(1);
-        });
+    let mut run_jpf_file = File::create(&run_jpf_path)?;
+    template.render_data(&mut run_jpf_file, &template_args)?;
     let mut args: Vec<&str> = config.jvm_flags.split(' ').collect();
     args.push("-jar");
     args.push(&jar_path);
@@ -277,5 +330,5 @@ pub fn construct_command(
     cmd.env("JPF_HOME", &config.jpf_home)
         .env("JVM_FLAGS", &config.jvm_flags)
         .args(&args);
-    (out_json_path, cmd)
+    Ok((out_json_path, cmd))
 }
