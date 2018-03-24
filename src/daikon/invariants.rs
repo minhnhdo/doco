@@ -30,33 +30,35 @@ impl fmt::Display for InvariantList {
             write!(f, "{}\n", entity)?;
 
             for inf in inferences.iter() {
-                if inf.cond.len() > 0 {
-                    write!(f, "\t(when {})\n", inf.cond)?;
-                }
-
-                if inf.pre.len() > 0 {
-                    write!(f, "\tPre-conditions:\n")?;
-                    for inv in inf.pre.iter() {
-                        pres += 1;
-                        write!(f, "\t\t{}\n", inv)?;
-                    }
-                }
-
-                if inf.post.len() > 0 {
-                    write!(f, "\tPost-conditions:\n")?;
-                    for inv in inf.post.iter() {
-                        posts += 1;
-                        write!(f, "\t\t{}\n", inv)?;
-                    }
-                }
+                write!(f, "{}\n", inf)?;
             }
         }
 
-        write!(f,
-               "Total: {} entities, {} pre-conditions, {} post-conditions\n",
-               self.map.len(),
-               pres,
-               posts)
+        write!(f, "Total: {} entities", self.map.len())
+    }
+}
+
+impl fmt::Display for Inferences {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.cond.len() > 0 {
+            write!(f, "\t(when {})\n", self.cond)?;
+        }
+
+        if self.pre.len() > 0 {
+            write!(f, "\tPre-conditions:\n")?;
+            for inv in self.pre.iter() {
+                write!(f, "\t\t{}\n", inv)?;
+            }
+        }
+
+        if self.post.len() > 0 {
+            write!(f, "\tPost-conditions:\n")?;
+            for inv in self.post.iter() {
+                write!(f, "\t\t{}\n", inv)?;
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -107,6 +109,12 @@ impl fmt::Display for Invariant {
                 write!(f, "{} == original value of {}", source, target)
             }
         }
+    }
+}
+
+impl InvariantList {
+    pub fn invariants_for(&self, name: &str) -> Option<&Vec<Inferences>> {
+        self.map.get(name)
     }
 }
 

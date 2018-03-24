@@ -7,10 +7,8 @@ use doco::daikon::invariants;
 use doco::Config;
 
 fn usage(program_name: &str) {
-    eprintln!(
-        "Usage: {} <json config>|<path/to/config.json>",
-        program_name
-    );
+    eprintln!("Usage: {} <json config>|<path/to/config.json>",
+              program_name);
     process::exit(1);
 }
 
@@ -42,13 +40,12 @@ pub fn main() {
     });
 
     // construct the command line arguments to pass to jpf
-    let (out_json_path, mut cmd) = doco::jpf::construct_command(
-        &config,
-        &output_path,
-        "com.google.common.math",
-        "IntMath",
-        "public static boolean isPrime(int n) {",
-    );
+    let (out_json_path, mut cmd) =
+        doco::jpf::construct_command(&config,
+                                     &output_path,
+                                     "com.google.common.math",
+                                     "IntMath",
+                                     "public static boolean isPrime(int n) {");
     println!("Static Analysis:");
     if let Ok(process::Output { stderr, stdout, .. }) = cmd.output() {
         if let Ok(s) = std::str::from_utf8(&stderr) {
@@ -69,5 +66,9 @@ pub fn main() {
     //     Err(err) => println!("Error running dynamic analysis: {}", err),
     // }
     let inv = invariants::Invariants::from_file("/tmp/inv.txt").unwrap();
-    println!("{}", inv);
+    if let Some(rules) = inv.invariants_for("DataStructures.StackAr.isFull()") {
+        for r in rules.iter() {
+            println!("{}", r);
+        }
+    }
 }
