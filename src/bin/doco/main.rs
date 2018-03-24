@@ -7,8 +7,10 @@ use doco::daikon::invariants;
 use doco::Config;
 
 fn usage(program_name: &str) {
-    eprintln!("Usage: {} <json config>|<path/to/config.json>",
-              program_name);
+    eprintln!(
+        "Usage: {} <json config>|<path/to/config.json>",
+        program_name
+    );
     process::exit(1);
 }
 
@@ -40,12 +42,13 @@ pub fn main() {
     });
 
     // construct the command line arguments to pass to jpf
-    let (out_json_path, mut cmd) =
-        doco::jpf::construct_command(&config,
-                                     &output_path,
-                                     "com.google.common.math",
-                                     "IntMath",
-                                     "public static boolean isPrime(int n) {");
+    let (out_json_path, mut cmd) = doco::jpf::construct_command(
+        &config,
+        &output_path,
+        "com.google.common.math",
+        "IntMath",
+        "public static boolean isPrime(int n) {",
+    );
     println!("Static Analysis:");
     if let Ok(process::Output { stderr, stdout, .. }) = cmd.output() {
         if let Ok(s) = std::str::from_utf8(&stderr) {
@@ -56,8 +59,9 @@ pub fn main() {
         }
     }
 
-    if let Some(s) = doco::jpf::process_output(&out_json_path) {
-        println!("{}", s);
+    match doco::jpf::process_output(&out_json_path) {
+        Ok(s) => println!("{}", s),
+        Err(e) => println!("{}", e.description()),
     }
 
     println!("\nDynamic Analysis:");

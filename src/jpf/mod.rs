@@ -1,7 +1,8 @@
 use mustache::{self, MapBuilder};
 use regex::Regex;
 use std::collections::HashMap;
-use std::fmt::Write;
+use std::error::Error;
+use std::fmt::{self, Write};
 use std::fs::File;
 use std::path::PathBuf;
 use std::process::{self, Command};
@@ -31,6 +32,31 @@ jdart.configs.{{method_name}}.symbolic.include=this.*;{{package}}.{{class}}.*
 #[derive(Debug, Serialize, Deserialize)]
 struct MethodSummary {
     summaries: HashMap<String, json::Value>,
+}
+
+#[derive(Debug)]
+struct NoValidValue {
+    description: String,
+}
+
+impl NoValidValue {
+    fn for_variable(name: &str) -> NoValidValue {
+        NoValidValue {
+            description: format!("No valid value for '{}'", name),
+        }
+    }
+}
+
+impl fmt::Display for NoValidValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", &self.description)
+    }
+}
+
+impl Error for NoValidValue {
+    fn description(&self) -> &str {
+        &self.description
+    }
 }
 
 fn construct_path(parent: &PathBuf, addition: &str) -> String {
@@ -84,12 +110,17 @@ fn parse_java_method(package: &str, class: &str, decl: &str) -> (String, String)
     (name, ret)
 }
 
-fn ranges_to_string(ranges: &[(i64, i64)], name: &str, lower: i64, upper: i64) -> Option<String> {
+fn ranges_to_string(
+    ranges: &[(i64, i64)],
+    name: &str,
+    lower: i64,
+    upper: i64,
+) -> Result<String, Box<Error>> {
     if ranges.len() == 0 {
-        return None;
+        return Err(Box::new(NoValidValue::for_variable(name)));
     }
     if ranges.len() == 1 && ranges[0] == (lower, upper) {
-        return Some(String::new());
+        return Ok(String::new());
     }
     let mut s = String::new();
     let mut conditions = Vec::new();
@@ -109,10 +140,12 @@ fn ranges_to_string(ranges: &[(i64, i64)], name: &str, lower: i64, upper: i64) -
         }
         conditions.push(s.clone());
     }
-    Some(format!("{}", conditions.join(" || ")))
+    Ok(format!("{}", conditions.join(" || ")))
 }
 
-fn variable_conditions_to_string(m: &HashMap<String, expression::Variable>) -> Option<String> {
+fn variable_conditions_to_string(
+    m: &HashMap<String, expression::Variable>,
+) -> Result<String, Box<Error>> {
     let mut s = String::new();
     for (_, var) in m.iter() {
         let (l, u) = {
@@ -128,14 +161,13 @@ fn variable_conditions_to_string(m: &HashMap<String, expression::Variable>) -> O
     if s.len() > 4 {
         let len = s.len() - 4;
         s.truncate(len);
-        return Some(s);
     }
-    Some(s)
+    Ok(s)
 }
 
-pub fn process_output(out_json_path: &str) -> Option<String> {
-    let mut file = File::open(out_json_path).ok()?;
-    let method_summary: MethodSummary = json::from_reader(&mut file).ok()?;
+pub fn process_output(out_json_path: &str) -> Result<String, Box<Error>> {
+    let mut file = File::open(out_json_path)?;
+    let method_summary: MethodSummary = json::from_reader(&mut file)?;
     let mut unparsable = Vec::new();
     let mut parsable_with_one_variable = HashMap::new();
     let mut parsable_with_multiple_variables = Vec::new();
@@ -150,7 +182,7 @@ pub fn process_output(out_json_path: &str) -> Option<String> {
                     json::Value::String(ref s) => match expression::Expression::from_str(s) {
                         expression::Expression::Unparsable(s) => unparsable.push(s),
                         expression::Expression::Parsed(Condition::True) => {
-                            return Some(String::from("True"))
+                            return Ok(String::from("True"))
                         }
                         expression::Expression::Parsed(Condition::Conditions(mut m)) => {
                             if m.len() == 1 {
@@ -184,7 +216,7 @@ pub fn process_output(out_json_path: &str) -> Option<String> {
     if unparsable.len() == 0 && parsable_with_one_variable.len() == 0
         && parsable_with_multiple_variables.len() == 0
     {
-        return Some(String::from(if has_error_paths {
+        return Ok(String::from(if has_error_paths {
             "True"
         } else {
             "No satisfiable value"
@@ -198,13 +230,13 @@ pub fn process_output(out_json_path: &str) -> Option<String> {
         unparsable.push(variable_conditions_to_string(cond)?);
     }
     if unparsable.len() == 1 {
-        return Some(unparsable[0].clone());
+        return Ok(unparsable[0].clone());
     }
     let ret = unparsable.join(") || (");
     if ret == "" {
-        return Some(String::from("True"));
+        return Ok(String::from("True"));
     }
-    Some(format!("({})", ret))
+    Ok(format!("({})", ret))
 }
 
 pub fn construct_command(
