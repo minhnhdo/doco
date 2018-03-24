@@ -59,7 +59,9 @@ pub fn main() {
         }
     }
 
-    println!("{}", doco::jpf::process_output(&out_json_path).unwrap());
+    if let Some(s) = doco::jpf::process_output(&out_json_path) {
+        println!("{}", s);
+    }
 
     println!("\nDynamic Analysis:");
     // match doco::daikon::infer(&config, &output_path) {
