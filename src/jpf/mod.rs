@@ -1,5 +1,4 @@
 use mustache::{self, MapBuilder};
-use regex::Regex;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fmt::{self, Write};
@@ -85,74 +84,12 @@ impl Error for InvalidPath {
     }
 }
 
-#[derive(Debug)]
-struct JavaArgParseError {
-    description: String,
-}
-
-impl JavaArgParseError {
-    fn from(arg: &str, method: &str) -> JavaArgParseError {
-        JavaArgParseError {
-            description: format!("Malformed argument {} in method {}", arg, method),
-        }
-    }
-}
-
-impl fmt::Display for JavaArgParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", &self.description)
-    }
-}
-
-impl Error for JavaArgParseError {
-    fn description(&self) -> &str {
-        &self.description
-    }
-}
-
 fn construct_path(parent: &PathBuf, addition: &str) -> Result<String, Box<Error>> {
     parent
         .join(addition)
         .to_str()
         .map(String::from)
         .ok_or_else(|| Box::new(InvalidPath::from(addition)) as Box<Error>)
-}
-
-fn parse_java_method(
-    package: &str,
-    class: &str,
-    decl: &str,
-) -> Result<(String, String), Box<Error>> {
-    lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?P<name>\w+)[ \t]*\([ \t]*(?P<arglist>[^\)]*)[ \t]*\)").unwrap();
-    }
-    let mut ret = String::new();
-    let mut name = String::new();
-    for cap in RE.captures_iter(decl) {
-        name = String::from(&cap["name"]);
-        ret.push_str(package);
-        ret.push('.');
-        ret.push_str(class);
-        ret.push('.');
-        ret.push_str(&name);
-        ret.push('(');
-        if cap["arglist"].len() != 0 {
-            for arg in cap["arglist"].split(',') {
-                let processed: Vec<&str> = arg.split_whitespace()
-                    .filter(|e| !e.starts_with('@'))
-                    .collect();
-                if processed.len() != 2 {
-                    return Err(Box::new(JavaArgParseError::from(arg, &name)));
-                }
-                ret.push_str(processed[1]);
-                ret.push(':');
-                ret.push_str(processed[0]);
-                ret.push(',');
-            }
-        }
-        ret.push(')');
-    }
-    Ok((name, ret))
 }
 
 fn ranges_to_string(
@@ -291,7 +228,7 @@ pub fn setup_environment(
     class: &str,
     method: &str,
 ) -> Result<(String, process::Command), Box<Error>> {
-    let (method_name, method_signature) = parse_java_method(package, class, method)?;
+    let (method_name, method_signature) = super::parse_java_method(package, class, method)?;
     let template = mustache::compile_str(SPF_TEMPLATE).unwrap();
     let jar_path = construct_path(&PathBuf::from(&config.jpf_home), "build/RunJPF.jar")?;
     let out_json_path = construct_path(output_path, "out.json")?;
@@ -316,21 +253,4 @@ pub fn setup_environment(
         .env("JVM_FLAGS", &config.jvm_flags)
         .args(&args);
     Ok((out_json_path, cmd))
-}
-
-#[cfg(test)]
-mod test {
-    use super::parse_java_method;
-
-    #[test]
-    fn test_parse_nullary_method() {
-        assert_eq!(
-            (
-                String::from("isEmpty"),
-                String::from("DataStructures.StackAr.isEmpty()")
-            ),
-            parse_java_method("DataStructures", "StackAr", "    public boolean isEmpty( )")
-                .unwrap()
-        );
-    }
 }
