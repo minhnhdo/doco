@@ -42,6 +42,7 @@ class UnsignedLongs {
 }
 
 public class GuavaIsPrime {
+  static final ImmutableSet<Long> POSITIVE_LONG_CANDIDATES;
   static final long FLOOR_SQRT_MAX_LONG = 3037000499L;
 
   private final int SIEVE_30 =
@@ -239,7 +240,7 @@ public class GuavaIsPrime {
    * @throws IllegalArgumentException if {@code n} is negative
    * @since 20.0
    */
-  public boolean isPrime(long n) {
+  public static boolean isPrime(long n) {
     if (n < 2) {
       this.checkNonNegative("n", n);
       return false;
@@ -271,21 +272,9 @@ public class GuavaIsPrime {
     throw new AssertionError();
   }
 
-	public static void main(String args[]) {
-			GuavaIsPrime primer = new GuavaIsPrime();
-
-			System.out.printf("%d is prime: %s\n", 2, primer.isPrime(2));
-			System.out.printf("%d is prime: %s\n", 3, primer.isPrime(3));
-			System.out.printf("%d is prime: %s\n", 7, primer.isPrime(7));
-			System.out.printf("%d is prime: %s\n", 3984, primer.isPrime(3984));
-			System.out.printf("%d is prime: %s\n", 4398, primer.isPrime(4398));
-			System.out.printf("%d is prime: %s\n", 11, primer.isPrime(11));
-			System.out.printf("%d is prime: %s\n", 3289, primer.isPrime(3289));
-			System.out.printf("%d is prime: %s\n", 498, primer.isPrime(498));
-			System.out.printf("%d is prime: %s\n", 43, primer.isPrime(43));
-			System.out.printf("%d is prime: %s\n", 4994, primer.isPrime(4994));
-			System.out.printf("%d is prime: %s\n", 839, primer.isPrime(839));
-			System.out.printf("%d is prime: %s\n", 4391, primer.isPrime(4391));
-			System.out.printf("%d is prime: %s\n", 9383027, primer.isPrime(9383027));
-	}
+    public static void main(String args[]) {
+        for (int i = 2; i < 1000; i++) {
+            GuavaIsPrime.isPrime(i);
+        }
+    }
 }
