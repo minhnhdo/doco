@@ -8,7 +8,7 @@ use doco::Config;
 
 fn usage(program_name: &str) {
     eprintln!(
-        "Usage: {} <json config>|<path/to/config.json> <package> <class> <method signature>",
+        "Usage: {} <json config>|<path/to/config.json> <package> <class> <method signature> <tester-class>",
         program_name
     );
     process::exit(1);
