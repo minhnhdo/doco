@@ -140,7 +140,7 @@ fn variable_conditions_to_string(
         }
         s.push_str(" && ");
     }
-    if s.len() > 4 {
+    if s.len() >= 4 {
         let len = s.len() - 4;
         s.truncate(len);
     }
