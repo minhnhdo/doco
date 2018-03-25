@@ -69,14 +69,7 @@ pub fn main() {
             Err(e) => eprintln!("Error: {}", e.description()),
         }
     } else {
-        let mut stdout = String::new();
-        let mut stderr = String::new();
-        jpf.stdout.unwrap().read_to_string(&mut stdout);
-        jpf.stderr.unwrap().read_to_string(&mut stderr);
-        eprintln!(
-            "JFP exited with an error, stdout = {}, stderr = {}",
-            &stdout, &stderr
-        );
+        eprintln!("JFP exited with an error");
     }
 
     println!("\nDynamic Analysis:");
