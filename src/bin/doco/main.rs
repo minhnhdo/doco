@@ -60,7 +60,6 @@ pub fn main() {
                 process::exit(1);
             },
         );
-
     eprintln!("Daikon output to: {}", out_inv_path);
 
     eprintln!("Spawning JPF");
@@ -75,61 +74,28 @@ pub fn main() {
         process::exit(1);
     });
 
-    let jpf_succeeded: bool;
-    match jpf.try_wait() {
-        Ok(Some(status)) => jpf_succeeded = status.success(),
-        _ => match jpf.wait() {
-            Ok(status) => jpf_succeeded = status.success(),
-            _ => jpf_succeeded = false,
-        },
-    }
-    // JPF must have finished before the next if
-    if jpf_succeeded {
-        match doco::jpf::process_output(&out_json_path) {
+    match jpf.wait() {
+        Ok(status) if status.success() => match doco::jpf::process_output(&out_json_path) {
             Ok(s) => println!("#doco-jpf {}", s),
             Err(e) => eprintln!("Error: {}", e.description()),
-        }
-    } else {
-        eprintln!("JPF exited with an error");
-    }
-
-    let dyncomp_succeeded: bool;
-    match dyncomp.try_wait() {
-        Ok(Some(status)) => dyncomp_succeeded = status.success(),
-        _ => match dyncomp.wait() {
-            Ok(status) => dyncomp_succeeded = status.success(),
-            _ => dyncomp_succeeded = false,
         },
+        _ => eprintln!("JPF exited with an error"),
     }
 
-    if dyncomp_succeeded {
-        let mut chicory = chicorycmd.spawn().unwrap_or_else(|e| {
-            eprintln!("Unable to execute daikon.Chicory, err = {}", e);
-            process::exit(1);
-        });
+    match dyncomp.wait() {
+        Ok(status) if status.success() => match chicorycmd.output() {
+            Ok(ref output) if output.status.success() => {
+                let inv = invariants::Invariants::from_file(&out_inv_path).unwrap();
+                if let Some(rules) = inv.invariants_for(&args[2], &args[3], &args[4]) {
+                    eprintln!("\nInvariants found for method: {}\n", &args[4]);
 
-        let chicory_succeeded: bool;
-        match chicory.try_wait() {
-            Ok(Some(status)) => chicory_succeeded = status.success(),
-            _ => match chicory.wait() {
-                Ok(status) => chicory_succeeded = status.success(),
-                _ => chicory_succeeded = false,
-            },
-        }
-
-        if chicory_succeeded {
-            let inv = invariants::Invariants::from_file(&out_inv_path).unwrap();
-            if let Some(rules) = inv.invariants_for(&args[2], &args[3], &args[4]) {
-                eprintln!("\nInvariants found for method: {}\n", &args[4]);
-
-                for r in rules.iter() {
-                    println!("{}", r);
+                    for r in rules.iter() {
+                        println!("{}", r);
+                    }
                 }
             }
-        } else {
-            eprintln!("daikon.Chicory exited with an error");
-        }
-    } else {
-        eprintln!("daikon.DynComp exited with an error");
+            _ => eprintln!("daikon.Chicory exited with an error"),
+        },
+        _ => eprintln!("daikon.DynComp exited with an error"),
     }
 }
