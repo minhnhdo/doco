@@ -1,7 +1,7 @@
 {
   "jpf_home": "../jpf-core/",
   "jvm_flags": "-Xmx1024m -ea",
-  "classpath": ["../guava/guava/target/classes", "/home/minh/.m2/repository/org/checkerframework/checker-compat-qual/2.0.0/checker-compat-qual-2.0.0.jar"],
-  "daikon_classpath": ["/opt/daikon/examples/java-examples/StackAr/", "/opt/daikon/daikon.jar", "/usr/lib64/jvm/java/jre/lib/rt.jar", "/usr/lib64/jvm/java/lib/tools.jar"],
+  "classpath": ["/opt/daikon/examples/java-examples/StackAr/"],
+  "daikon_classpath": ["/opt/daikon/daikon.jar", "/usr/lib64/jvm/java/jre/lib/rt.jar", "/usr/lib64/jvm/java/lib/tools.jar"],
   "max_depth": 42
 }

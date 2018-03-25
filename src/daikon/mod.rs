@@ -20,9 +20,20 @@ pub fn setup_environment(
 
     // java -cp $CLASSPATH daikon.DynComp [package].[class]
     let mut dyncomp = Command::new("java");
-    let mut args: Vec<String> = Vec::new();
+    let classpath = {
+        let mut v = Vec::new();
+        for cp in config
+            .daikon_classpath
+            .iter()
+            .chain(config.classpath.iter())
+        {
+            v.push(cp.clone());
+        }
+        v.join(":")
+    };
+    let mut args = Vec::new();
     args.push(String::from("-cp"));
-    args.push(config.daikon_classpath.join(":"));
+    args.push(classpath.clone());
     args.push(String::from(DAIKON_DYNCOMP));
     args.push(format!("{}.{}", package, class));
     dyncomp.args(&args);
@@ -30,9 +41,9 @@ pub fn setup_environment(
     // java -cp $CLASSPATH daikon.Chicory --daikon-online
     // --comparability-file=[class].decls-DynComp [package].[class]
     let mut chicory = Command::new("java");
-    let mut args: Vec<String> = Vec::new();
+    let mut args = Vec::new();
     args.push(String::from("-cp"));
-    args.push(config.daikon_classpath.join(":"));
+    args.push(classpath);
     args.push(String::from(DAIKON_CHICORY));
     args.push(String::from("--daikon-online"));
     args.push(String::from("--comparability-file"));
@@ -40,7 +51,7 @@ pub fn setup_environment(
     args.push(format!("{}.{}", package, class));
     chicory.args(&args);
 
-    let out_file = File::create(&invariants_out).unwrap();
+    let out_file = File::create(&invariants_out)?;
     chicory.stdout(out_file);
 
     Ok((invariants_out, dyncomp, chicory))
