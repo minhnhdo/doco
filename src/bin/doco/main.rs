@@ -64,7 +64,7 @@ pub fn main() {
     // JPF must have finished before the next if
     if jpf_succeeded {
         match doco::jpf::process_output(&out_json_path) {
-            Ok(s) => println!("{}", s),
+            Ok(s) => println!("#doco-jpf {}", s),
             Err(e) => eprintln!("Error: {}", e.description()),
         }
     } else {
