@@ -61,15 +61,15 @@ pub fn main() {
             },
         );
 
-    println!("Daikon output to: {}", out_inv_path);
+    eprintln!("Daikon output to: {}", out_inv_path);
 
-    println!("Spawning JPF");
+    eprintln!("Spawning JPF");
     let mut jpf = jpfcmd.spawn().unwrap_or_else(|e| {
         eprintln!("Unable to execute JPF, err = {}", e);
         process::exit(1);
     });
 
-    println!("Spawning Daikon instrumentation and inference engine");
+    eprintln!("Spawning Daikon instrumentation and inference engine");
     let mut dyncomp = dyncompcmd.spawn().unwrap_or_else(|e| {
         eprintln!("Unable to execute daikon.DynComp, err = {}", e);
         process::exit(1);
