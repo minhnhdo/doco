@@ -56,7 +56,7 @@ impl Expression {
                 } else {
                     s
                 };
-                Expression::Unparsable(String::from(RE.replace_all(s, "")))
+                Expression::Unparsable(String::from(RE.replace_all(stripped, "")))
             }
         }
     }
