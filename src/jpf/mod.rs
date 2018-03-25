@@ -27,6 +27,7 @@ concolic.method.{{method_name}}={{method_signature}}
 concolic.method.{{method_name}}.config={{method_name}}
 jdart.configs.{{method_name}}.symbolic.statics={{package}}.{{class}}
 jdart.configs.{{method_name}}.symbolic.include=this.*;{{package}}.{{class}}.*
+jdart.configs.{{method_name}}.max_depth=42
 ";
 
 #[derive(Debug, Serialize, Deserialize)]
