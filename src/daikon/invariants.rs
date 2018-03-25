@@ -122,12 +122,12 @@ impl InvariantList {
     ) -> Option<&Vec<Inferences>> {
         if let Ok((_, signature)) = super::super::parse_java_method(package, class, method) {
             // DataStructures.StackArTester.top(i:int,s:String,)
-            let sig_re = Regex::new(r"(?P<pref>[(, ])([^:]+):(?P<type>[^,]+)").unwrap();
-            let signature = sig_re.replace_all(&signature, "$pref$type");
-
-            let comma_re = Regex::new(r", *(?P<paren>\))$").unwrap();
-            let signature = comma_re.replace_all(&signature, "$paren");
-
+            lazy_static! {
+                static ref SIG_RE: Regex = Regex::new(r"(?P<pref>[(, ])([^:]+):(?P<type>[^,]+)").unwrap();
+                static ref COMMA_RE: Regex = Regex::new(r", *(?P<paren>\))$").unwrap();
+            }
+            let signature = SIG_RE.replace_all(&signature, "$pref$type");
+            let signature = COMMA_RE.replace_all(&signature, "$paren");
             return self.map.get(&signature.to_string());
         }
 
@@ -144,9 +144,13 @@ impl Invariants {
         let mut post = Vec::new();
 
         let mut dstarted = false; // daikon invariants started
-        let sep = Regex::new(r"^=+$").unwrap();
-        let entity_def = Regex::new(r"^(\S+):::([A-Za-z0-9]+);?(.*)$").unwrap();
-        let condition_re = Regex::new("condition=\"(.*)\"").unwrap();
+        lazy_static! {
+            static ref SEP: Regex = Regex::new(r"^=+$").unwrap();
+            static ref ENTITY_DEF: Regex = Regex::new(r"^(\S+):::([A-Za-z0-9]+);?(.*)$").unwrap();
+            static ref CONDITION_RE: Regex = Regex::new(r#"condition="(.*)""#).unwrap();
+            static ref IMPLIES: Regex = Regex::new(r"==>").unwrap();
+            static ref PARTS: Regex = Regex::new(r"^(\S+) ([!=<>]+) (\S+)$").unwrap();
+        }
 
         let mut inftype = InfType::PreCondition;
         let mut curr_entity = String::new();
@@ -154,7 +158,7 @@ impl Invariants {
         for line in daikon_inv.split("\n") {
             // skip Daikon header
             if !dstarted {
-                if sep.is_match(line) {
+                if SEP.is_match(line) {
                     dstarted = true;
                 }
 
@@ -162,13 +166,13 @@ impl Invariants {
             }
 
             // separator (====)
-            if sep.is_match(line) {
+            if SEP.is_match(line) {
                 continue;
             }
 
             // Object/Method start/end
-            if entity_def.is_match(line) {
-                for cap in entity_def.captures_iter(line) {
+            if ENTITY_DEF.is_match(line) {
+                for cap in ENTITY_DEF.captures_iter(line) {
                     let mut new_cond = String::new();
 
                     match &cap[2] {
@@ -178,8 +182,8 @@ impl Invariants {
                     };
 
                     // condition is supported?
-                    if condition_re.is_match(&cap[3]) {
-                        for cap in condition_re.captures_iter(&cap[3]) {
+                    if CONDITION_RE.is_match(&cap[3]) {
+                        for cap in CONDITION_RE.captures_iter(&cap[3]) {
                             new_cond = String::from(&cap[1]);
                         }
                     } else {
@@ -215,14 +219,12 @@ impl Invariants {
             }
 
             // invariant definition
-            let implies = Regex::new(r"==>").unwrap();
-            if implies.is_match(line) {
+            if IMPLIES.is_match(line) {
                 continue;
             }
 
-            let parts = Regex::new(r"^(\S+) ([!=<>]+) (\S+)$").unwrap();
-            if parts.is_match(line) {
-                for cap in parts.captures_iter(line) {
+            if PARTS.is_match(line) {
+                for cap in PARTS.captures_iter(line) {
                     let inv = match &cap[3] {
                         DAIKON_NULL => match &cap[2] {
                             DAIKON_EQ => Invariant::Null {

@@ -195,8 +195,10 @@ pub fn setup_environment(
     class: &str,
     method: &str,
 ) -> Result<(String, process::Command), Box<Error>> {
+    lazy_static! {
+        static ref TEMPLATE: mustache::Template = mustache::compile_str(SPF_TEMPLATE).unwrap();
+    }
     let (method_name, method_signature) = super::parse_java_method(package, class, method)?;
-    let template = mustache::compile_str(SPF_TEMPLATE).unwrap();
     let jar_path = construct_path(&PathBuf::from(&config.jpf_home), "build/RunJPF.jar")?;
     let out_json_path = construct_path(output_path, "out.json")?;
     let run_jpf_path = construct_path(output_path, "run.jpf")?;
@@ -210,7 +212,7 @@ pub fn setup_environment(
         .insert_str("max_depth", format!("{}", config.max_depth))
         .build();
     let mut run_jpf_file = File::create(&run_jpf_path)?;
-    template.render_data(&mut run_jpf_file, &template_args)?;
+    TEMPLATE.render_data(&mut run_jpf_file, &template_args)?;
     let mut args: Vec<&str> = config.jvm_flags.split(' ').collect();
     args.push("-jar");
     args.push(&jar_path);
