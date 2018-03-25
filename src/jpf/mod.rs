@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use std::process::{self, Command};
 
 use self::expression::Condition;
-use super::{json, Config};
+use super::{construct_path, json, Config};
 
 pub mod expression;
 
@@ -57,39 +57,6 @@ impl Error for NoValidValue {
     fn description(&self) -> &str {
         &self.description
     }
-}
-
-#[derive(Debug)]
-struct InvalidPath {
-    description: String,
-}
-
-impl InvalidPath {
-    fn from(addition: &str) -> InvalidPath {
-        InvalidPath {
-            description: format!("Unable to construct path to {}", addition),
-        }
-    }
-}
-
-impl fmt::Display for InvalidPath {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", &self.description)
-    }
-}
-
-impl Error for InvalidPath {
-    fn description(&self) -> &str {
-        &self.description
-    }
-}
-
-fn construct_path(parent: &PathBuf, addition: &str) -> Result<String, Box<Error>> {
-    parent
-        .join(addition)
-        .to_str()
-        .map(String::from)
-        .ok_or_else(|| Box::new(InvalidPath::from(addition)) as Box<Error>)
 }
 
 fn ranges_to_string(

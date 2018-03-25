@@ -8,7 +8,7 @@ static DAIKON_INV_PATH: &str = "daikon.txt";
 static DAIKON_DYNCOMP: &str = "daikon.DynComp";
 static DAIKON_CHICORY: &str = "daikon.Chicory";
 
-use super::Config;
+use super::{construct_path, Config};
 
 pub fn setup_environment(
     config: &Config,
@@ -16,7 +16,7 @@ pub fn setup_environment(
     package: &str,
     class: &str,
 ) -> Result<(String, process::Command, process::Command), Box<Error>> {
-    let invariants_out = String::from(output_path.join(DAIKON_INV_PATH).to_str().unwrap());
+    let invariants_out = construct_path(output_path, DAIKON_INV_PATH)?;
 
     // java -cp $CLASSPATH daikon.DynComp [package].[class]
     let mut dyncomp = Command::new("java");

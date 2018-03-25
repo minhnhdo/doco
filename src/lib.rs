@@ -58,6 +58,31 @@ impl Error for JavaArgParseError {
     }
 }
 
+#[derive(Debug)]
+struct InvalidPath {
+    description: String,
+}
+
+impl InvalidPath {
+    fn from(addition: &str) -> InvalidPath {
+        InvalidPath {
+            description: format!("Unable to construct path to {}", addition),
+        }
+    }
+}
+
+impl fmt::Display for InvalidPath {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", &self.description)
+    }
+}
+
+impl Error for InvalidPath {
+    fn description(&self) -> &str {
+        &self.description
+    }
+}
+
 impl Config {
     pub fn from_str(s: &str) -> Result<Config, json::Error> {
         json::from_str(s)
@@ -124,6 +149,14 @@ pub fn parse_java_method(
         ret.push(')');
     }
     Ok((name, ret))
+}
+
+pub fn construct_path(parent: &PathBuf, addition: &str) -> Result<String, Box<Error>> {
+    parent
+        .join(addition)
+        .to_str()
+        .map(String::from)
+        .ok_or_else(|| Box::new(InvalidPath::from(addition)) as Box<Error>)
 }
 
 #[cfg(test)]
