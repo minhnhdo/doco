@@ -16,7 +16,7 @@ fn usage(program_name: &str) {
 
 pub fn main() {
     let args: Vec<String> = ::std::env::args().collect();
-    if args.len() != 5 {
+    if args.len() != 6 {
         usage(&args[0]);
     }
     let config = {
@@ -42,17 +42,39 @@ pub fn main() {
     });
 
     // construct the environment for JPF
-    let (out_json_path, mut cmd) =
+    let (out_json_path, mut jpfcmd) =
         doco::jpf::setup_environment(&config, &output_path, &args[2], &args[3], &args[4])
             .unwrap_or_else(|e| {
                 eprintln!("Unable to setup JPF environment, err = {}", e.description());
                 process::exit(1);
             });
+
+    // construct the environment for Daikon
+    let (out_inv_path, mut dyncompcmd, mut chicorycmd) =
+        doco::daikon::setup_environment(&config, &output_path, &args[2], &args[5]).unwrap_or_else(
+            |e| {
+                eprintln!(
+                    "Unable to setup Daikon environment, err = {}",
+                    e.description()
+                );
+                process::exit(1);
+            },
+        );
+
+    println!("Daikon output to: {}", out_inv_path);
+
     println!("Spawning JPF");
-    let mut jpf = cmd.spawn().unwrap_or_else(|e| {
+    let mut jpf = jpfcmd.spawn().unwrap_or_else(|e| {
         eprintln!("Unable to execute JPF, err = {}", e);
         process::exit(1);
     });
+
+    println!("Spawning Daikon instrumentation and inference engine");
+    let mut dyncomp = dyncompcmd.spawn().unwrap_or_else(|e| {
+        eprintln!("Unable to execute daikon.DynComp, err = {}", e);
+        process::exit(1);
+    });
+
     let jpf_succeeded: bool;
     match jpf.try_wait() {
         Ok(Some(status)) => jpf_succeeded = status.success(),
@@ -71,15 +93,43 @@ pub fn main() {
         eprintln!("JPF exited with an error");
     }
 
-    println!("\nDynamic Analysis:");
-    // match doco::daikon::infer(&config, &output_path) {
-    //     Ok(_) => println!("Success!"),
-    //     Err(err) => println!("Error running dynamic analysis: {}", err),
-    // }
-    let inv = invariants::Invariants::from_file("/tmp/inv.txt").unwrap();
-    if let Some(rules) = inv.invariants_for("DataStructures.StackAr.isFull()") {
-        for r in rules.iter() {
-            println!("{}", r);
+    let dyncomp_succeeded: bool;
+    match dyncomp.try_wait() {
+        Ok(Some(status)) => dyncomp_succeeded = status.success(),
+        _ => match dyncomp.wait() {
+            Ok(status) => dyncomp_succeeded = status.success(),
+            _ => dyncomp_succeeded = false,
+        },
+    }
+
+    if dyncomp_succeeded {
+        let mut chicory = chicorycmd.spawn().unwrap_or_else(|e| {
+            eprintln!("Unable to execute daikon.Chicory, err = {}", e);
+            process::exit(1);
+        });
+
+        let chicory_succeeded: bool;
+        match chicory.try_wait() {
+            Ok(Some(status)) => chicory_succeeded = status.success(),
+            _ => match chicory.wait() {
+                Ok(status) => chicory_succeeded = status.success(),
+                _ => chicory_succeeded = false,
+            },
         }
+
+        if chicory_succeeded {
+            let inv = invariants::Invariants::from_file(&out_inv_path).unwrap();
+            if let Some(rules) = inv.invariants_for(&args[2], &args[3], &args[4]) {
+                eprintln!("\nInvariants found for method: {}\n", &args[4]);
+
+                for r in rules.iter() {
+                    println!("{}", r);
+                }
+            }
+        } else {
+            eprintln!("daikon.Chicory exited with an error");
+        }
+    } else {
+        eprintln!("daikon.DynComp exited with an error");
     }
 }

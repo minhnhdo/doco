@@ -29,7 +29,7 @@ pub struct Config {
     jpf_home: String,
     jvm_flags: String,
     classpath: Vec<String>,
-    tests_dir: String,
+    daikon_classpath: Vec<String>,
     max_depth: u32,
 }
 
@@ -94,7 +94,8 @@ pub fn parse_java_method(
     decl: &str,
 ) -> Result<(String, String), Box<Error>> {
     lazy_static! {
-        static ref RE: Regex = Regex::new(r"(?P<name>\w+)[ \t]*\([ \t]*(?P<arglist>[^\)]*)[ \t]*\)").unwrap();
+        static ref RE: Regex =
+            Regex::new(r"(?P<name>\w+)[ \t]*\([ \t]*(?P<arglist>[^\)]*)[ \t]*\)").unwrap();
     }
     let mut ret = String::new();
     let mut name = String::new();

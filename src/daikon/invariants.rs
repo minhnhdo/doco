@@ -23,9 +23,6 @@ type Expression = String;
 
 impl fmt::Display for InvariantList {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut pres = 0;
-        let mut posts = 0;
-
         for (entity, inferences) in &self.map {
             write!(f, "{}\n", entity)?;
 
@@ -41,20 +38,20 @@ impl fmt::Display for InvariantList {
 impl fmt::Display for Inferences {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.cond.len() > 0 {
-            write!(f, "\t(when {})\n", self.cond)?;
+            write!(f, "(when {})\n", self.cond)?;
         }
 
         if self.pre.len() > 0 {
-            write!(f, "\tPre-conditions:\n")?;
+            write!(f, "Pre-conditions:\n")?;
             for inv in self.pre.iter() {
-                write!(f, "\t\t{}\n", inv)?;
+                write!(f, "\t{}\n", inv)?;
             }
         }
 
         if self.post.len() > 0 {
-            write!(f, "\tPost-conditions:\n")?;
+            write!(f, "Post-conditions:\n")?;
             for inv in self.post.iter() {
-                write!(f, "\t\t{}\n", inv)?;
+                write!(f, "\t{}\n", inv)?;
             }
         }
 
@@ -64,15 +61,19 @@ impl fmt::Display for Inferences {
 
 #[derive(Clone, Debug)]
 pub struct Inferences {
-    cond: Expression, // when the pre- and post-conditions apply
-    pre: Vec<Invariant>, // list of pre-conditions
+    cond: Expression,     // when the pre- and post-conditions apply
+    pre: Vec<Invariant>,  // list of pre-conditions
     post: Vec<Invariant>, // list of post-conditions
 }
 
 #[derive(Clone, Debug)]
 enum Invariant {
-    Null { exp: Expression }, // x is NULL
-    NotNull { exp: Expression }, // x is not NULL
+    Null {
+        exp: Expression,
+    }, // x is NULL
+    NotNull {
+        exp: Expression,
+    }, // x is not NULL
     Comparison {
         lhs: Expression,
         operator: String,
@@ -113,8 +114,24 @@ impl fmt::Display for Invariant {
 }
 
 impl InvariantList {
-    pub fn invariants_for(&self, name: &str) -> Option<&Vec<Inferences>> {
-        self.map.get(name)
+    pub fn invariants_for(
+        &self,
+        package: &str,
+        class: &str,
+        method: &str,
+    ) -> Option<&Vec<Inferences>> {
+        if let Ok((_, signature)) = super::super::parse_java_method(package, class, method) {
+            // DataStructures.StackArTester.top(i:int,s:String,)
+            let sig_re = Regex::new(r"(?P<pref>[(, ])([^:]+):(?P<type>[^,]+)").unwrap();
+            let signature = sig_re.replace_all(&signature, "$pref$type");
+
+            let comma_re = Regex::new(r", *(?P<paren>\))$").unwrap();
+            let signature = comma_re.replace_all(&signature, "$paren");
+
+            return self.map.get(&signature.to_string());
+        }
+
+        None
     }
 }
 
@@ -134,7 +151,7 @@ impl Invariants {
         let mut inftype = InfType::PreCondition;
         let mut curr_entity = String::new();
 
-        for (i, line) in daikon_inv.split("\n").enumerate() {
+        for line in daikon_inv.split("\n") {
             // skip Daikon header
             if !dstarted {
                 if sep.is_match(line) {
@@ -157,7 +174,7 @@ impl Invariants {
                     match &cap[2] {
                         DAIKON_OBJ | DAIKON_ENTER => inftype = InfType::PreCondition,
                         DAIKON_EXIT => inftype = InfType::PostCondition,
-                        _ => eprintln!("Skipping (line {}): {}", i + 1, &cap[2]),
+                        _ => (),
                     };
 
                     // condition is supported?
@@ -176,10 +193,10 @@ impl Invariants {
 
                     if changed_entity || (same_entity && cond_changed) {
                         inferences.push(Inferences {
-                                            cond: curr_cond.to_owned(),
-                                            pre: pre.to_owned(),
-                                            post: post.to_owned(),
-                                        });
+                            cond: curr_cond.to_owned(),
+                            pre: pre.to_owned(),
+                            post: post.to_owned(),
+                        });
 
                         pre = Vec::new();
                         post = Vec::new();
@@ -200,7 +217,6 @@ impl Invariants {
             // invariant definition
             let implies = Regex::new(r"==>").unwrap();
             if implies.is_match(line) {
-                eprintln!("Skipping unsupported syntax: {}", line);
                 continue;
             }
 
@@ -208,20 +224,20 @@ impl Invariants {
             if parts.is_match(line) {
                 for cap in parts.captures_iter(line) {
                     let inv = match &cap[3] {
-                        DAIKON_NULL => {
-                            match &cap[2] {
-                                DAIKON_EQ => Invariant::Null { exp: cap[1].to_string() },
-                                DAIKON_NOTEQ => Invariant::NotNull { exp: cap[1].to_string() },
-                                _ => panic!("Invalid operator on NULL: {}", &cap[2]),
-                            }
-                        }
-                        _ => {
-                            Invariant::Comparison {
-                                lhs: cap[1].to_string(),
-                                operator: cap[2].to_string(),
-                                rhs: cap[3].to_string(),
-                            }
-                        }
+                        DAIKON_NULL => match &cap[2] {
+                            DAIKON_EQ => Invariant::Null {
+                                exp: cap[1].to_string(),
+                            },
+                            DAIKON_NOTEQ => Invariant::NotNull {
+                                exp: cap[1].to_string(),
+                            },
+                            _ => panic!("Invalid operator on NULL: {}", &cap[2]),
+                        },
+                        _ => Invariant::Comparison {
+                            lhs: cap[1].to_string(),
+                            operator: cap[2].to_string(),
+                            rhs: cap[3].to_string(),
+                        },
                     };
 
                     match inftype {
@@ -229,8 +245,6 @@ impl Invariants {
                         InfType::PostCondition => post.push(inv),
                     };
                 }
-            } else {
-                eprintln!("Warning: skipping line {}: {}", i + 1, line);
             }
         }
 

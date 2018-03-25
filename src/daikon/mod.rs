@@ -1,49 +1,47 @@
-use std::fmt;
-use std::path::{Path, PathBuf};
-use std::result;
+use std::error::Error;
+use std::fs::File;
+use std::process::{self, Command};
+use std::path::PathBuf;
 
 pub mod invariants;
+static DAIKON_INV_PATH: &str = "daikon.txt";
+static DAIKON_DYNCOMP: &str = "daikon.DynComp";
+static DAIKON_CHICORY: &str = "daikon.Chicory";
 
-use super::ftw;
 use super::Config;
 
-static OUTPUT_PREFIX: &str = "daikon";
+pub fn setup_environment(
+    config: &Config,
+    output_path: &PathBuf,
+    package: &str,
+    class: &str,
+) -> Result<(String, process::Command, process::Command), Box<Error>> {
+    let invariants_out = String::from(output_path.join(DAIKON_INV_PATH).to_str().unwrap());
 
-type Result<T> = result::Result<T, Error>;
+    // java -cp $CLASSPATH daikon.DynComp [package].[class]
+    let mut dyncomp = Command::new("java");
+    let mut args: Vec<String> = Vec::new();
+    args.push(String::from("-cp"));
+    args.push(config.daikon_classpath.join(":"));
+    args.push(String::from(DAIKON_DYNCOMP));
+    args.push(format!("{}.{}", package, class));
+    dyncomp.args(&args);
 
-pub enum Error {
-    InvalidTestsDirectory(String),
-    DynamicAnalysisFailure(String, String),
-}
+    // java -cp $CLASSPATH daikon.Chicory --daikon-online
+    // --comparability-file=[class].decls-DynComp [package].[class]
+    let mut chicory = Command::new("java");
+    let mut args: Vec<String> = Vec::new();
+    args.push(String::from("-cp"));
+    args.push(config.daikon_classpath.join(":"));
+    args.push(String::from(DAIKON_CHICORY));
+    args.push(String::from("--daikon-online"));
+    args.push(String::from("--comparability-file"));
+    args.push(format!("{}.decls-DynComp", class));
+    args.push(format!("{}.{}", package, class));
+    chicory.args(&args);
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Error::InvalidTestsDirectory(ref dir) => write!(f, "Invalid tests directory: {}", dir),
-            Error::DynamicAnalysisFailure(ref file, ref reason) => {
-                write!(f, "Daikon failure.\nFile: {}\nReason: {}", file, reason)
-            }
-        }
-    }
-}
+    let out_file = File::create(&invariants_out).unwrap();
+    chicory.stdout(out_file);
 
-fn on_test_file(file: &Path) -> ftw::Result {
-    println!("\t{}", file.to_str().unwrap());
-    Ok(())
-}
-
-fn on_test_dir(dir: &Path) -> ftw::Result {
-    println!("{}", dir.to_str().unwrap());
-    Ok(())
-}
-
-pub fn infer(config: &Config, output_path: &PathBuf) -> Result<()> {
-    let daikon_out = output_path.join(OUTPUT_PREFIX);
-    println!("Inferring to: {:?}", daikon_out);
-
-    if let Err(err) = ftw::ftw(&config.tests_dir.clone(), on_test_dir, on_test_file) {
-        return Err(Error::DynamicAnalysisFailure(err.path, err.message));
-    }
-
-    Ok(())
+    Ok((invariants_out, dyncomp, chicory))
 }
