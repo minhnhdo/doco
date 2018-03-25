@@ -123,7 +123,8 @@ impl InvariantList {
         if let Ok((_, signature)) = super::super::parse_java_method(package, class, method) {
             // DataStructures.StackArTester.top(i:int,s:String,)
             lazy_static! {
-                static ref SIG_RE: Regex = Regex::new(r"(?P<pref>[(, ])([^:]+):(?P<type>[^,]+)").unwrap();
+                static ref SIG_RE: Regex =
+                    Regex::new(r"(?P<pref>[(, ])([^:]+):(?P<type>[^,]+)").unwrap();
                 static ref COMMA_RE: Regex = Regex::new(r", *(?P<paren>\))$").unwrap();
             }
             let signature = SIG_RE.replace_all(&signature, "$pref$type");
@@ -154,6 +155,7 @@ impl Invariants {
 
         let mut inftype = InfType::PreCondition;
         let mut curr_entity = String::new();
+        let mut skipping = false;
 
         for line in daikon_inv.split("\n") {
             // skip Daikon header
@@ -174,11 +176,16 @@ impl Invariants {
             if ENTITY_DEF.is_match(line) {
                 for cap in ENTITY_DEF.captures_iter(line) {
                     let mut new_cond = String::new();
+                    skipping = false;
 
                     match &cap[2] {
                         DAIKON_OBJ | DAIKON_ENTER => inftype = InfType::PreCondition,
                         DAIKON_EXIT => inftype = InfType::PostCondition,
-                        _ => (),
+                        _ => {
+                            // unknown rule type: ignore until next event
+                            skipping = true;
+                            continue;
+                        }
                     };
 
                     // condition is supported?
@@ -215,6 +222,10 @@ impl Invariants {
                     curr_cond = new_cond.to_owned();
                 }
 
+                continue;
+            }
+
+            if skipping {
                 continue;
             }
 
