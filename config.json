@@ -1,7 +1,7 @@
 {
   "jpf_home": "../jpf-core/",
   "jvm_flags": "-Xmx1024m -ea",
-  "classpath": ["/opt/daikon/examples/java-examples/StackAr/"],
-  "daikon_classpath": ["/opt/daikon/daikon.jar", "/usr/lib64/jvm/java/jre/lib/rt.jar", "/usr/lib64/jvm/java/lib/tools.jar"],
+  "classpath": ["../daikon-5.6.2/examples/java-examples/StackAr/"],
+  "daikon_classpath": ["../daikon-5.6.2/daikon.jar", "../daikon-5.6.2/java/dcomp_premain.jar", "../daikon-5.6.2/java/dcomp_rt.jar", "/usr/lib/jvm/java/jre/lib/rt.jar", "/usr/lib/jvm/java/lib/tools.jar"],
   "max_depth": 42
 }
