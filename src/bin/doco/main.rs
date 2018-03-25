@@ -45,12 +45,12 @@ pub fn main() {
     let (out_json_path, mut cmd) =
         doco::jpf::setup_environment(&config, &output_path, &args[2], &args[3], &args[4])
             .unwrap_or_else(|e| {
-                eprintln!("Unable to setup JFP environment, err = {}", e.description());
+                eprintln!("Unable to setup JPF environment, err = {}", e.description());
                 process::exit(1);
             });
     println!("Spawning JPF");
     let mut jpf = cmd.spawn().unwrap_or_else(|e| {
-        eprintln!("Unable to execute JFP, err = {}", e);
+        eprintln!("Unable to execute JPF, err = {}", e);
         process::exit(1);
     });
     let jpf_succeeded: bool;
@@ -68,7 +68,7 @@ pub fn main() {
             Err(e) => eprintln!("Error: {}", e.description()),
         }
     } else {
-        eprintln!("JFP exited with an error");
+        eprintln!("JPF exited with an error");
     }
 
     println!("\nDynamic Analysis:");
