@@ -136,17 +136,19 @@ fn parse_java_method(
         ret.push('.');
         ret.push_str(&name);
         ret.push('(');
-        for arg in cap["arglist"].split(',') {
-            let processed: Vec<&str> = arg.split_whitespace()
-                .filter(|e| !e.starts_with('@'))
-                .collect();
-            if processed.len() != 2 {
-                return Err(Box::new(JavaArgParseError::from(arg, &name)));
+        if cap["arglist"].len() != 0 {
+            for arg in cap["arglist"].split(',') {
+                let processed: Vec<&str> = arg.split_whitespace()
+                    .filter(|e| !e.starts_with('@'))
+                    .collect();
+                if processed.len() != 2 {
+                    return Err(Box::new(JavaArgParseError::from(arg, &name)));
+                }
+                ret.push_str(processed[1]);
+                ret.push(':');
+                ret.push_str(processed[0]);
+                ret.push(',');
             }
-            ret.push_str(processed[1]);
-            ret.push(':');
-            ret.push_str(processed[0]);
-            ret.push(',');
         }
         ret.push(')');
     }
@@ -314,4 +316,21 @@ pub fn setup_environment(
         .env("JVM_FLAGS", &config.jvm_flags)
         .args(&args);
     Ok((out_json_path, cmd))
+}
+
+#[cfg(test)]
+mod test {
+    use super::parse_java_method;
+
+    #[test]
+    fn test_parse_nullary_method() {
+        assert_eq!(
+            (
+                String::from("isEmpty"),
+                String::from("DataStructures.StackAr.isEmpty()")
+            ),
+            parse_java_method("DataStructures", "StackAr", "    public boolean isEmpty( )")
+                .unwrap()
+        );
+    }
 }
