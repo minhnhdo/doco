@@ -1,4 +1,4 @@
-use nom::{alphanumeric, digit, IResult};
+use nom::{digit, IResult};
 use regex::Regex;
 use std::collections::HashMap;
 use std::{str, i16, i32, i64, i8};
@@ -148,7 +148,7 @@ fn interprete(vars: &mut HashMap<String, Variable>, ast: &Ast) -> Option<()> {
 
 named! {
     parse_variable,
-    delimited!(tag!("'"), alphanumeric, tag!("'"))
+    delimited!(tag!("'"), is_a_s!("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789."), tag!("'"))
 }
 
 named! {
