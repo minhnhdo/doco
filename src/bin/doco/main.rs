@@ -2,7 +2,6 @@ extern crate doco;
 
 use std::env;
 use std::process;
-use std::io::Read;
 
 use doco::daikon::invariants;
 use doco::Config;
