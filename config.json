@@ -2,5 +2,6 @@
   "jpf_home": "../jpf-core/",
   "jvm_flags": "-Xmx1024m -ea",
   "classpath": ["../guava/guava/target/classes", "/home/minh/.m2/repository/org/checkerframework/checker-compat-qual/2.0.0/checker-compat-qual-2.0.0.jar"],
-  "tests_dir": "/opt/guava/guava-tests/test"
+  "tests_dir": "/opt/guava/guava-tests/test",
+  "max_depth": 42
 }

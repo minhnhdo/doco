@@ -27,6 +27,7 @@ pub struct Config {
     jvm_flags: String,
     classpath: Vec<String>,
     tests_dir: String,
+    max_depth: u32,
 }
 
 impl Config {

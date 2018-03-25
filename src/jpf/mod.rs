@@ -27,7 +27,7 @@ concolic.method.{{method_name}}={{method_signature}}
 concolic.method.{{method_name}}.config={{method_name}}
 jdart.configs.{{method_name}}.symbolic.statics={{package}}.{{class}}
 jdart.configs.{{method_name}}.symbolic.include=this.*;{{package}}.{{class}}.*
-jdart.configs.{{method_name}}.max_depth=42
+jdart.configs.{{method_name}}.max_depth={{max_depth}}
 ";
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -301,6 +301,7 @@ pub fn setup_environment(
         .insert_str("class", class)
         .insert_str("method_name", method_name)
         .insert_str("method_signature", method_signature)
+        .insert_str("max_depth", format!("{}", config.max_depth))
         .build();
     let mut run_jpf_file = File::create(&run_jpf_path)?;
     template.render_data(&mut run_jpf_file, &template_args)?;
