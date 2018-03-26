@@ -1,0 +1,13 @@
+\section{Future Work}
+
+In this section, we discuss \texttt{doco}'s current limitations and avenues for future research.
+
+First and foremost, \texttt{doco} is limited by the tools it uses underneath. While JDart and Daikon represent the state-of-the-art in concolic and dynamic analysis for Java programs, respectively, both tools have important limitations that make them less effective in certain kinds of applications. More specifically, we identify the following areas of future work for \texttt{doco}:
+
+\begin{description}
+    \item [Support for more complex method signatures] JDart works by performing a mix of concrete and symbolic execution on the target method. However, it is not possible to perform its analysis on methods that take Java objects as arguments (instead of primitive types). Strings, another common data type, are also not supported by JDart currently. Adding support for different data types to JDart would, therefore, significantly help \texttt{doco} generate better documentation for a wider range of methods.
+    
+    \item [Integration with popular testing libraries] One of the most popular testing packages for Java applications is the JUnit library~\cite{junit:2018}. When using JUnit, developers are able to write their unit tests by defining methods that start with the \texttt{test} prefix --- once that is done, the library is able to determine test cases by using Java's reflection API. Unfortunately, Daikon's instrumentation phase cannot observe methods called using reflection, so existing test suites do not integrate well with Daikon. It is not difficult, however, to imagine an automated translation process from that transforms test files from the format expected by JUnit to that expected by Daikon. Essentially, the process would involve the creation of a \texttt{main} function and the explicit invocation of every test method defined on the class. As an experiment, we transformed a small JUnit test suite using the rationale just described and it worked well with Daikon. Performing such translation automatically is left for future work.
+    
+    \item [Incremental analysis] Currently, when \texttt{doco} is invoked, it performs the entire analysis (concolic execution and dynamic analysis) on the fly. That means that making two consecutive calls to \texttt{doco} will take equally long. Since the analysis we perform can be computationally expensive for certain large projects, an alternative execution mode could involve a daemon that watches the file system and performs the analysis in the background whenever the user changes a file or a test. When the user requests documentation generation, perhaps minutes later, the results should be instantaneous.
+\end{description}

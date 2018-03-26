@@ -1,0 +1,57 @@
+\section{Introduction}
+
+A recurring problem faced by developers working on large software projects is that of making sure knowledge is accessible by every member of the team \cite{Ko:2007}. Documentation plays an important role in acting as a medium for communicating this knowledge among developers \cite{Forward:2002}. Most developers find the  available  software  documentation
+effective  when  learning  a  new  software  system, testing a system, or working with a new
+system \cite{Lethbridge:2003}. Its perceived vitality is demonstrated by the finding that developers consider it to be important even when it is not up-to-date \cite{Forward:2002}. Therefore, having high-quality documentation is critical for software developers because it helps them work efficiently \cite{Robillard:2011} .
+
+In order to feed this insatiable demand for documentation, there are various methods adopted by various companies to ensure the existence of documentation. These methods range from inline comments in the source code to documents that provide an overview of design and architecture \cite{Halvorsen:2018}. However, these practices have not been quite fruitful because they show a clear picture of process immaturity and general software documentation process practice non-satisfaction \cite{SEDocOverview}.
+
+To mitigate this problem, it is highly desirable that this process is automated. To make automation possible, however, it is necessary to understand the properties lacking in the existing documentation generation process. We developed a tool called \texttt{doco} that \textit{automatically generates documentation} and helps overcome these difficulties.
+
+\section{Desirable Documentation Properties}
+
+Based on existing studies that identify problems inherent in existing documentation, we define a list of properties that is non-existent and desirable in the current document  generation process.
+
+Large-scale software projects invest a lot of time and resources to ensure that they have abundance of documentation.But it was observed that little was understood about the relevance of these documents \cite{Forward:2002}. This was believed to be caused because by evolving documentation needs as the project progressed and that documentation was rarely updated and was always outdated relative to the current state of the system \cite{Forward:2002}. \textbf{Therefore, it is essential that documentation is easy to update so that it reflects the current state of the system.}.
+
+On the other hand, small to medium-scale software projects appreciated the importance of having documentation. However, they had little to no documentation because they were constrained by time and resources \cite{Forward:2002}. Moreover, with the popularity of Scrum among software development teams, the focus has shifted towards working software and direct communication rather than written documentation. It is therefore feared that that this might cause major knowledge loss during or after system development because documentation is seen as a burden \cite{Stettina:2011}.  \textbf{Therefore, it is desirable that documentation generation should take very little time.}
+
+Moreover, since documentation reflects the understanding of the developer who wrote it, it can be misleading and untrustworthy. Lethbridge et.al classify it as an ugly truth regarding the nature of documentation. Hence, software developers are more likely to use and trust documentation that is high-level in nature   \cite{Lethbridge:2003}. This lack of trust therefore causes the developer to ignore important properties of a certain part of code-base that are essential because traditional documentation artifacts cannot have its correctness automatically checked. Hence, developers who find themselves unable to get the information they need from documentation tend to resort to coworkers, making interruptions more frequent and increasing dependency on a single individual \cite{Ko:2007}. \textbf{Therefore, any concrete documentation that is generated should give the developer confidence that it is trustworthy and correct in nature.}
+
+Furthermore, when it comes to maintaining a software project it is essential that the code-base be documented using in-line comments. These greatly assist detailed maintenance work because they are "short" and "right-there".\cite{Lethbridge:2003}. Additionally, developers also spend considerable time consulting the source code rather than reading documentation \cite{Lethbridge:2003} therefore it is only logical to include it as part of the source code.
+Due to these reasons, there is general agreement in the industry that all documentation should be in the code because any other documentation gets outdated quickly. \cite{kull_2015} \textbf{Therefore, documentation should be present as inline comments in the code-base because it increases the maintainability of the code.}
+
+In addition to this, systems often have too much documentation that is usually poorly written \cite{Lethbridge:2003}. This causes information overload of irrelevant information that finding useful content in the documentation becomes a challenging task. In the interest of time, developers usually forfeit this challenge. \textbf{Therefore, any generated documentation should be precise and to the point.}
+
+Therefore, based on this short review of problems inherent in current documentation, we want \texttt{doco} to generate documentation  \textbf{as inline comments} that are \textbf{easy to update}, \textbf{quick to produce}, \textbf{trustworthy},  and \textbf{precise}. In the next section, we discuss how these properties play a part in informing the design decisions for \texttt{doco}
+
+\section{Design}
+
+Based on the properties identified in the previous section, we inform the design of \texttt{doco} in this section. Doco's design addresses each property as described below:
+
+
+
+    \subsection{Being precise} Developers frequently visit the documentation to understand what a function accomplishes without any indication of how the function does its work. Therefore, any documentation that doco generates should keep this caveat in mind. One way to specify such a requirement is by using \textit{preconditions} and \textit{post-conditions}. Any programmer that calls the function is then responsible for ensuring that the precondition is valid and it is the job of the function to ensure that the post-condition becomes true at the end of the function. At a later point,the programmer may re implement the function in a new way but the dependencies will still work with no changes. Therefore, by expressing documentation in terms of a pre and post condition, doco ensures that the preciseness criteria is met.  
+    
+
+    
+    \subsection{Being Trustworthy} Having established that we are generating pre and post conditions for the program, we now need to ensure that these are generated reliably. We use a combination of state of the art concolic execution (Java Path Finder) and dynamic analysis (Daikon) \cite{Ernst:2007} of the function for which documentation is being generated to generate the pre and post conditions. Hence, this approach neither relies on the developer's understanding of the code nor is it influenced by any of the developer's assumptions. It is generated solely based on the properties exhibited during model checking and dynamic analysis of the function under inspection. Therefore it can accurately infer properties about the source code.
+    
+    \subsection{Having Inline Comments} The pre and post conditions generated by the dynamic analysis and concolic executiion need to be integrated as inline comments. For this purpose, we develop doco as a plugin for Atom \cite{Atom} so that the users can append the pre and post conditions to their functions right inside their code.
+    
+    \subsection{Quick to produce} The documentation can easily be generate for a function by just invoking a shortcut command in the editor. \texttt{Doco} will generate documentation for the function in which the cursor is present. 
+    
+    \subsection{Easy to Update} The documentation is quite easy to update because you can regenerate the documentation when you make changes to a function with the same keystroke that was used to generate it in the first place.
+    
+ Hence, \texttt{Doco} harnesses the power of both concolic execution and dynamic analysis to provide the end-user with a meaningful set of pre-conditions and post-conditions that can be automatically inferred from the source code. \texttt{Doco} is made available to the community through an Atom plugin that they can easily install and integrate with their project. We discuss the implementation details of doco in the next section.
+
+
+
+
+
+
+
+
+
+
+

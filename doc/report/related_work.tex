@@ -1,0 +1,26 @@
+\section{Related Work}
+
+In this section, we will present related work with a focus on documentation generation. All related approaches can either be classified as employing either static analysis or dynamic analysis. Doco's novelty lies in its ability to make use of both approaches to generate meaningful documentation.
+
+\subsection{Static Analysis}
+
+Sridhara et.al \cite{Sridhara:2011} aim to improve developer's understanding of the code by generating natural language phrases that describe the high level abstract algorithmic actions that a function is performing. McBurney and McMillan \cite{McBurney:2014:ADG:2597008.2597149} take this approach even further and summarize the method context hence capturing how the functions interact with each other. However, their focus relies mainly documenting how a certain function implements its functionality rather than inferring and documenting the properties of the function itself. 
+
+Buse and Weimer\cite{Buse:2008:ADI:1390630.1390664}  construct natural language descriptions of conditions when an error is thrown. \texttt{Doco} also infers error path conditions through the Java Path Finder and generates preconditions based on that. However, \texttt{doco} has more accurate precondition because it also outputs the pre-conditions determined dynamically through Daikon. 
+
+A lot of static analysis approaches also focus on extracting the usage of a particular function from source code repositories \cite{Montandon:2013,Kim:2009,Long:2009}.  However, the existence of these usage examples in source code repositories is a key requirement for such approaches. These approaches are of no use when an API or product is being developed. However, once a product has been developed fully and have been adopted these approaches could prove to be useful in providing supplemental documentation.
+
+\subsection{Dynamic Analysis}
+
+Sulir and Poruban \cite{Sulir:2017} propose an approach called DynamiDoc that uses dynamic analysis to provide users with a usage example showing a possible input and the output for that function. This approach is quite useful for inferring usage while the product is being developed. Therefore, this approach could be a useful extension to \texttt{doco} by using it to append a usage example to the generated pre and post condition.
+
+Lo and Maoz \cite{Lo:2010} combine scenario-based and value-based specification mining.
+UML charts are generated that include preconditions and post conditions containing string representations
+of concrete variable values. But their approach focuses on documenting the interaction between functions rather than focus on individual functions like \texttt{doco} does.
+
+FailureDoc \cite{SaiZhang:2011} observes and records unit tests that fail. It only adds comments above lines that need to be changed to make the tests pass.
+
+Tralfamadore \cite{Lefebvre:2012} is a system that outupts the frequently-occuring values of a function specific parameter after carrying out an analysis of large exection traces. It requires large amount of executions and frequently occurring parameters hold limited value when it comes to documentation.  
+
+@tComment \cite{Tan:2012} is a tool that finds code-comment inconsistencies using dynamic analysis.
+Unlike \texttt{doco}, it does not produce any new documentation and only checks existing documentation for incorrectness.
