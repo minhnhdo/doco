@@ -42,7 +42,7 @@ struct NoValidValue {
 impl NoValidValue {
     fn for_variable(name: &str) -> NoValidValue {
         NoValidValue {
-            description: format!("No valid value for '{}'", name),
+            description: format!("No valid value for {}", name),
         }
     }
 }
@@ -77,7 +77,7 @@ fn ranges_to_string(
         s.clear();
         s.push('(');
         if l > lower {
-            write!(&mut s, "'{}' >= {}", name, l)?;
+            write!(&mut s, "{} >= {}", name, l)?;
             if u < upper {
                 s.push_str(" && ");
             } else {
@@ -85,7 +85,7 @@ fn ranges_to_string(
             }
         }
         if u < upper {
-            write!(&mut s, "'{}' <= {})", name, u)?;
+            write!(&mut s, "{} <= {})", name, u)?;
         }
         conditions.push(s.clone());
     }
