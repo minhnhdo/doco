@@ -17,8 +17,9 @@ pub fn setup_environment(
     class: &str,
 ) -> Result<(String, process::Command, process::Command), Box<Error>> {
     let invariants_out = construct_path(output_path, DAIKON_INV_PATH)?;
+    let decls_out = construct_path(output_path, &format!("{}.decls-DynComp", class))?;
 
-    // java -cp $CLASSPATH daikon.DynComp [package].[class]
+    // java -cp $CLASSPATH daikon.DynComp --comparability-file [decls_out] [package].[class]
     let mut dyncomp = Command::new("java");
     let classpath = {
         let mut v = Vec::new();
@@ -35,6 +36,7 @@ pub fn setup_environment(
     args.push(String::from("-cp"));
     args.push(classpath.clone());
     args.push(String::from(DAIKON_DYNCOMP));
+    args.push(format!("--output-dir={}", output_path.to_str().unwrap()));
     args.push(format!("{}.{}", package, class));
     dyncomp.args(&args);
 
@@ -47,7 +49,7 @@ pub fn setup_environment(
     args.push(String::from(DAIKON_CHICORY));
     args.push(String::from("--daikon-online"));
     args.push(String::from("--comparability-file"));
-    args.push(format!("{}.decls-DynComp", class));
+    args.push(decls_out);
     args.push(format!("{}.{}", package, class));
     chicory.args(&args);
 
