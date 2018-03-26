@@ -131,7 +131,7 @@ pub fn process_output(out_json_path: &str) -> Result<String, Box<Error>> {
                     json::Value::String(ref s) => match expression::Expression::from_str(s) {
                         expression::Expression::Unparsable(s) => unparsable.push(s),
                         expression::Expression::Parsed(Condition::True) => {
-                            return Ok(String::from("True"))
+                            return Ok(String::from("None"))
                         }
                         expression::Expression::Parsed(Condition::Conditions(mut m)) => {
                             if m.len() == 1 {
@@ -166,7 +166,7 @@ pub fn process_output(out_json_path: &str) -> Result<String, Box<Error>> {
         && parsable_with_multiple_variables.len() == 0
     {
         return Ok(String::from(if has_error_paths {
-            "True"
+            "None"
         } else {
             "No satisfiable value"
         }));
@@ -183,7 +183,7 @@ pub fn process_output(out_json_path: &str) -> Result<String, Box<Error>> {
     }
     let ret = unparsable.join(") || (");
     if ret == "" {
-        return Ok(String::from("True"));
+        return Ok(String::from("None"));
     }
     Ok(format!("({})", ret))
 }
