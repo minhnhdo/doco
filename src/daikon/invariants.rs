@@ -15,6 +15,7 @@ const DAIKON_OBJ: &str = "OBJECT";
 const DAIKON_ENTER: &str = "ENTER";
 const DAIKON_EXIT: &str = "EXIT";
 
+const DAIKON_RETURN: &str = "return";
 const DAIKON_NULL: &str = "null";
 const DAIKON_EQ: &str = "==";
 const DAIKON_NOTEQ: &str = "!=";
@@ -88,6 +89,9 @@ enum Invariant {
         operator: String,
         rhs: Expression,
     }, // x >= y
+    Returns {
+        ret: Expression,
+    },
     Original {
         source: Expression,
         target: Expression,
@@ -108,6 +112,7 @@ impl fmt::Display for Invariant {
                 ref operator,
                 ref rhs,
             } => write!(f, "{} {} {}", lhs, operator, rhs),
+            Invariant::Returns { ref ret } => write!(f, "Returns {}", ret),
             Invariant::Original {
                 ref source,
                 ref target,
@@ -255,11 +260,19 @@ impl Invariants {
                             },
                             _ => panic!("Invalid operator on NULL: {}", &cap[2]),
                         },
-                        _ => Invariant::Comparison {
-                            lhs: cap[1].to_string(),
-                            operator: cap[2].to_string(),
-                            rhs: cap[3].to_string(),
-                        },
+                        _ => {
+                            if &cap[1] == DAIKON_RETURN && &cap[2] == DAIKON_EQ {
+                                Invariant::Returns {
+                                    ret: cap[3].to_string(),
+                                }
+                            } else {
+                                Invariant::Comparison {
+                                    lhs: cap[1].to_string(),
+                                    operator: cap[2].to_string(),
+                                    rhs: cap[3].to_string(),
+                                }
+                            }
+                        }
                     };
 
                     match inftype {
