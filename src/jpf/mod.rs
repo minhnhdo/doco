@@ -76,16 +76,20 @@ fn ranges_to_string(
     for &(l, u) in ranges.iter() {
         s.clear();
         s.push('(');
-        if l > lower {
-            write!(&mut s, "{} >= {}", name, l)?;
-            if u < upper {
-                s.push_str(" && ");
-            } else {
-                s.push(')');
+        if l == u {
+            write!(&mut s, "{} == {})", name, l)?;
+        } else {
+            if l > lower {
+                write!(&mut s, "{} >= {}", name, l)?;
+                if u < upper {
+                    s.push_str(" && ");
+                } else {
+                    s.push(')');
+                }
             }
-        }
-        if u < upper {
-            write!(&mut s, "{} <= {})", name, u)?;
+            if u < upper {
+                write!(&mut s, "{} <= {})", name, u)?;
+            }
         }
         conditions.push(s.clone());
     }
