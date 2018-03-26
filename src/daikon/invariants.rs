@@ -37,25 +37,34 @@ impl fmt::Display for InvariantList {
 
 impl fmt::Display for Inferences {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.cond.len() > 0 {
-            write!(f, "(when {})\n", self.cond)?;
-        }
-
+        write!(f, r#"#doco-daikon {{"cond":""#)?;
+        write!(f, r#"{}","pre":["#, self.cond)?;
         if self.pre.len() > 0 {
-            write!(f, "Pre-conditions:\n")?;
-            for inv in self.pre.iter() {
-                write!(f, "\t{}\n", inv)?;
-            }
+            write!(
+                f,
+                r#""{}"],"post":["#,
+                self.pre
+                    .iter()
+                    .map(|e| format!("{}", e).replace("\"", "\\\""))
+                    .collect::<Vec<String>>()
+                    .join("\",\"")
+            )?;
+        } else {
+            write!(f, r#"],"post":["#)?;
         }
-
         if self.post.len() > 0 {
-            write!(f, "Post-conditions:\n")?;
-            for inv in self.post.iter() {
-                write!(f, "\t{}\n", inv)?;
-            }
+            write!(
+                f,
+                r#""{}"]}}"#,
+                self.post
+                    .iter()
+                    .map(|e| format!("{}", e).replace("\"", "\\\""))
+                    .collect::<Vec<String>>()
+                    .join("\",\"")
+            )
+        } else {
+            write!(f, "]}}")
         }
-
-        Ok(())
     }
 }
 

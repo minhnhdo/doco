@@ -85,7 +85,13 @@ pub fn main() {
     match dyncomp.wait() {
         Ok(status) if status.success() => match chicorycmd.output() {
             Ok(ref output) if output.status.success() => {
-                let inv = invariants::Invariants::from_file(&out_inv_path).unwrap();
+                let inv = invariants::Invariants::from_file(&out_inv_path).unwrap_or_else(|e| {
+                    eprintln!(
+                        "Unable to parse invariant from {}, err = {}",
+                        &out_inv_path, e
+                    );
+                    process::exit(1);
+                });
                 if let Some(rules) = inv.invariants_for(&args[2], &args[3], &args[4]) {
                     eprintln!("\nInvariants found for method: {}\n", &args[4]);
 
