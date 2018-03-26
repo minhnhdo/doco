@@ -42,14 +42,13 @@ class UnsignedLongs {
 }
 
 public class GuavaIsPrime {
-  static final ImmutableSet<Long> POSITIVE_LONG_CANDIDATES;
   static final long FLOOR_SQRT_MAX_LONG = 3037000499L;
 
-  private final int SIEVE_30 =
+  private static final int SIEVE_30 =
       ~((1 << 1) | (1 << 7) | (1 << 11) | (1 << 13) | (1 << 17) | (1 << 19) | (1 << 23)
           | (1 << 29));
 
-  long checkNonNegative(String role, long x) {
+  static long checkNonNegative(String role, long x) {
     if (x < 0) {
       throw new IllegalArgumentException(role + " (" + x + ") must be >= 0");
     }
@@ -242,7 +241,7 @@ public class GuavaIsPrime {
    */
   public static boolean isPrime(long n) {
     if (n < 2) {
-      this.checkNonNegative("n", n);
+      checkNonNegative("n", n);
       return false;
     }
     if (n == 2 || n == 3 || n == 5 || n == 7 || n == 11 || n == 13) {
