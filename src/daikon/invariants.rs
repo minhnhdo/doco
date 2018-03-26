@@ -93,9 +93,10 @@ enum Invariant {
         ret: Expression,
     },
     Original {
+        same: bool,
         source: Expression,
         target: Expression,
-    }, // x == orig(y)
+    }, // x [!=]= orig(y)
 }
 enum InfType {
     PreCondition,
@@ -106,22 +107,42 @@ impl fmt::Display for Invariant {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Invariant::Null { ref exp } => write!(f, "{} is NULL", exp),
+
             Invariant::NotNull { ref exp } => write!(f, "{} is not NULL", exp),
             Invariant::Comparison {
                 ref lhs,
                 ref operator,
                 ref rhs,
             } => write!(f, "{} {} {}", lhs, operator, rhs),
+
             Invariant::Returns { ref ret } => write!(f, "Returns {}", ret),
+
             Invariant::Original {
+                same,
                 ref source,
                 ref target,
             } => {
-                if source == target {
-                    return write!(f, "{} is unchanged", source);
-                }
+                if same {
+                    if source == target {
+                        return write!(f, "{} is unchanged", source);
+                    }
 
-                write!(f, "{} == original value of {}", source, target)
+                    write!(
+                        f,
+                        "{} is the same as the original value of {}",
+                        source, target
+                    )
+                } else {
+                    if source == target {
+                        return write!(f, "{} changes", source);
+                    }
+
+                    write!(
+                        f,
+                        "{} differs from the original valueo of {}",
+                        source, target
+                    )
+                }
             }
         }
     }
