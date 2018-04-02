@@ -13,6 +13,16 @@ A documentation generator
         cd /path/to/jpf-core
         ant
 
+#### jConstraints
+1) Clone the jConstraints project
+
+        git clone git@github.com:psycopaths/jconstraints.git /path/to/jconstraints
+
+2) Install
+
+        cd /path/to/jconstraints
+        mvn install # the built jar is found at target/jconstraints-[VERSION].jar
+
 #### jConstraints-z3
 1) Install z3 and the Java binding for z3, both at version 4.4.1.
 2) Install the Java binding for z3 into the local Maven repo.
@@ -33,16 +43,6 @@ A documentation generator
         cd /path/to/jconstraints-z3
         mkdir -p $HOME/.jconstraints/extensions
         cp target/jconstraints-z3-[VERSION].jar $HOME/.jconstraints/extensions
-
-#### jConstraints
-1) Clone the jConstraints project
-
-        git clone git@github.com:psycopaths/jconstraints.git /path/to/jconstraints
-
-2) Install
-
-        cd /path/to/jconstraints
-        mvn install # the built jar is found at target/jconstraints-[VERSION].jar
 
 #### JDart
 1) Clone the JDart project
